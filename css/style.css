@@ -1,0 +1,546 @@
+/* ============================================================
+   AFTER BURNER CLIMAX - ARCADE STYLESHEET
+   Authentic Sega Lindbergh Arcade HUD & Mobile Touch Controls
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #02040a;
+  font-family: 'Impact', 'Arial Black', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* CRT Scanlines & Screen Curvature Filter */
+.crt-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%),
+              radial-gradient(circle, transparent 65%, rgba(0, 0, 0, 0.75) 100%);
+  background-size: 100% 4px, 100% 100%;
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* Screen FX Flashes */
+#climax-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 235, 120, 0.35) 0%, rgba(255, 60, 0, 0.65) 85%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9;
+  transition: opacity 0.15s ease-out;
+}
+
+#damage-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.25) 0%, rgba(255, 0, 0, 0.8) 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.1s ease-out;
+}
+
+/* Cockpit Canopy Struts Overlay (For 1st Person Mode) */
+#cockpit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+  display: none;
+}
+
+/* Master HUD Layer */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 8;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.8), 0 0 16px rgba(0, 150, 255, 0.6);
+}
+
+/* Top Bar: Mission, Stage, Score, Speed */
+.hud-top {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 35px;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+.hud-stage {
+  color: #ffe600;
+  text-shadow: 0 0 12px #ff9900;
+  font-size: 24px;
+}
+
+.hud-track-info {
+  font-size: 13px;
+  color: #ffaa00;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  text-shadow: 0 0 6px #ff6600;
+}
+
+.hud-score-box {
+  text-align: center;
+}
+
+.hud-score-val {
+  color: #00ffff;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.hud-speed-box {
+  text-align: right;
+  color: #ff3344;
+  font-size: 28px;
+}
+
+/* Combo & Rank Indicator */
+.hud-combo-box {
+  position: absolute;
+  top: 95px;
+  right: 35px;
+  text-align: right;
+  display: none;
+}
+.combo-count {
+  font-size: 42px;
+  color: #ffe600;
+  text-shadow: 0 0 15px #ff6600;
+  font-weight: bold;
+}
+.combo-rank {
+  font-size: 24px;
+  color: #00ffff;
+  letter-spacing: 3px;
+}
+
+/* Boss Health Bar */
+#boss-hud {
+  position: absolute;
+  top: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 580px;
+  text-align: center;
+  display: none;
+}
+.boss-title {
+  color: #ff2244;
+  font-size: 20px;
+  letter-spacing: 4px;
+  margin-bottom: 5px;
+  text-shadow: 0 0 15px #ff0000;
+  font-weight: bold;
+}
+.boss-bar-outer {
+  width: 100%;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #ff3344;
+  box-shadow: 0 0 12px #ff0044;
+  padding: 2px;
+  border-radius: 3px;
+}
+.boss-bar-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff0033, #ff8800);
+  transition: width 0.15s linear;
+}
+
+/* Incoming Threat Warning Banner */
+#warning-banner {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  display: none;
+  pointer-events: none;
+}
+.warning-text {
+  font-size: 40px;
+  color: #ff1133;
+  font-weight: bold;
+  letter-spacing: 6px;
+  text-shadow: 0 0 18px #ff0000, 0 0 38px #ff0000;
+  animation: blink 0.12s infinite alternate;
+}
+.warning-sub {
+  font-size: 19px;
+  color: #ffee44;
+  letter-spacing: 2px;
+  margin-top: 6px;
+  text-shadow: 0 0 10px #ff9900;
+  font-weight: bold;
+}
+
+/* Near-Miss Evade Banner */
+#evade-banner {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 40px;
+  color: #00ffff;
+  text-shadow: 0 0 20px #00ffff, 0 0 45px #00aaff;
+  letter-spacing: 6px;
+  display: none;
+  font-weight: bold;
+  pointer-events: none;
+  animation: pulseGlow 0.25s infinite alternate;
+}
+
+/* Climax Mode Active Banner */
+.climax-active-text {
+  position: absolute;
+  top: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 54px;
+  color: #ffe600;
+  text-shadow: 0 0 22px #ff0055, 0 0 40px #ff0033;
+  letter-spacing: 8px;
+  display: none;
+  font-weight: bold;
+  animation: pulseGlow 0.18s infinite alternate;
+}
+
+/* Radio Comms Chatter Box */
+#radio-box {
+  position: absolute;
+  bottom: 110px;
+  left: 35px;
+  background: rgba(0, 15, 30, 0.75);
+  border: 1px solid #00f0ff;
+  border-left: 5px solid #ffe600;
+  border-radius: 4px;
+  padding: 8px 16px;
+  max-width: 420px;
+  box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
+  display: none;
+}
+.radio-sender {
+  font-size: 14px;
+  color: #ffe600;
+  letter-spacing: 1px;
+}
+.radio-message {
+  font-size: 17px;
+  color: #e0f6ff;
+  margin-top: 2px;
+  font-family: sans-serif;
+  font-weight: 600;
+}
+
+/* Bottom Bar: Weapon, Armor, Climax Gauge */
+.missile-container {
+  position: absolute;
+  bottom: 30px;
+  left: 35px;
+  font-size: 20px;
+  color: #00ffcc;
+}
+.missile-val {
+  font-size: 32px;
+  color: #ffe600;
+  margin-left: 6px;
+}
+
+.armor-container {
+  position: absolute;
+  bottom: 30px;
+  right: 35px;
+  font-size: 20px;
+  color: #00ffcc;
+  text-align: right;
+}
+.armor-val {
+  font-size: 26px;
+  color: #00ff88;
+}
+.armor-bar-outer {
+  width: 170px;
+  height: 14px;
+  background: rgba(0, 20, 30, 0.85);
+  border: 2px solid #00ffff;
+  border-radius: 3px;
+  margin-top: 5px;
+  overflow: hidden;
+  padding: 1px;
+}
+.armor-bar-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff2244, #ffbb00, #00ff88);
+  transition: width 0.2s ease-out;
+}
+
+.climax-container {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 440px;
+  text-align: center;
+}
+.climax-label {
+  font-size: 19px;
+  letter-spacing: 4px;
+  color: #ffcc00;
+  text-shadow: 0 0 12px #ff6600;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+.climax-bar-outer {
+  width: 100%;
+  height: 22px;
+  background: rgba(0, 20, 40, 0.85);
+  border: 2px solid #00ffff;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  padding: 2px;
+}
+.climax-bar-inner {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff0055, #ff9900, #ffe600);
+  box-shadow: 0 0 15px #ff5500;
+  transition: width 0.1s linear;
+}
+.climax-ready {
+  animation: pulseGlow 0.4s infinite alternate;
+}
+
+/* Targeting Reticle Lock Boxes */
+.lock-box {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 2px solid #ff2244;
+  box-shadow: 0 0 12px #ff0044;
+  pointer-events: none;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.05s ease-out;
+}
+.lock-box::after {
+  content: 'LOCK';
+  position: absolute;
+  bottom: -18px;
+  font-size: 11px;
+  color: #ff3344;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.lock-box.climax-lock {
+  border-color: #ffe600;
+  box-shadow: 0 0 18px #ffe600;
+}
+.lock-box.climax-lock::after {
+  content: 'CLIMAX LOCK';
+  color: #ffe600;
+}
+
+/* Mobile Virtual Touch Controls (Shown only on touch devices) */
+#touch-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  z-index: 7;
+  display: none;
+}
+.touch-stick-zone {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  width: 140px;
+  height: 140px;
+  border: 2px dashed rgba(0, 255, 255, 0.4);
+  border-radius: 50%;
+  background: rgba(0, 20, 40, 0.25);
+  touch-action: none;
+}
+.touch-stick-thumb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  margin: -25px 0 0 -25px;
+  border-radius: 50%;
+  background: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 15px #00ffff;
+  pointer-events: none;
+}
+
+.touch-action-buttons {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.btn-touch {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  border: 2px solid #00ffff;
+  background: rgba(0, 30, 60, 0.65);
+  color: #fff;
+  font-weight: bold;
+  font-size: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+  touch-action: manipulation;
+}
+.btn-touch:active {
+  background: rgba(0, 255, 255, 0.8);
+  color: #000;
+}
+.btn-climax-touch {
+  border-color: #ffe600;
+  box-shadow: 0 0 15px #ff9900;
+  color: #ffe600;
+}
+
+/* Start Overlay & Menu Screen */
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(4, 8, 22, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  padding: 20px;
+}
+#overlay h1 {
+  font-size: 64px;
+  letter-spacing: 6px;
+  color: #ffe600;
+  text-shadow: 0 0 20px #ff3300, 0 0 45px #ff0033;
+  margin-bottom: 6px;
+  transform: skew(-8deg);
+}
+#overlay h2 {
+  font-size: 26px;
+  color: #00ffff;
+  letter-spacing: 4px;
+  margin-bottom: 25px;
+}
+.instructions {
+  font-size: 16px;
+  line-height: 1.9;
+  color: #e0e8ff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 20px 35px;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 0 25px rgba(0, 150, 255, 0.3);
+  max-width: 680px;
+  text-align: left;
+}
+.key-hint {
+  color: #ffe600;
+  font-weight: bold;
+  padding: 1px 7px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  border: 1px solid #ffe600;
+}
+.click-prompt {
+  margin-top: 25px;
+  font-size: 26px;
+  color: #ff3366;
+  animation: blink 0.8s infinite alternate;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+/* Animations */
+@keyframes blink {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  from { box-shadow: 0 0 15px #ff0044; filter: brightness(1.1); }
+  to { box-shadow: 0 0 35px #ffe600; filter: brightness(1.6); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  #overlay h1 { font-size: 44px; }
+  #overlay h2 { font-size: 20px; }
+  .instructions { font-size: 14px; padding: 15px; }
+  .hud-top { padding: 0 15px; font-size: 16px; }
+  .hud-score-val { font-size: 24px; }
+  .climax-container { width: 85%; }
+  .missile-container { font-size: 16px; bottom: 85px; }
+  .armor-container { font-size: 16px; bottom: 85px; }
+  #touch-controls { display: block; }
+}

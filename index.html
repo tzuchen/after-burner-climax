@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AFTER BURNER CLIMAX - LEGACY EDITION</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div class="crt-overlay"></div>
+  <div id="climax-flash"></div>
+  <div id="damage-flash"></div>
+
+  <!-- Cockpit Framing Overlay (Visible in 1st Person Cockpit Mode) -->
+  <svg id="cockpit-overlay" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+    <!-- Top Cockpit Frame Arch -->
+    <path d="M 0,0 L 500,0 L 700,200 L 1220,200 L 1420,0 L 1920,0 L 1920,1080 L 1600,1080 L 1350,680 L 570,680 L 320,1080 L 0,1080 Z" fill="rgba(10, 14, 20, 0.92)" stroke="#223344" stroke-width="6"/>
+    <!-- Center HUD Glass Frame -->
+    <rect x="740" y="240" width="440" height="400" rx="20" fill="rgba(0, 255, 120, 0.04)" stroke="#00ff88" stroke-width="4" stroke-dasharray="10 6"/>
+  </svg>
+
+  <!-- Arcade HUD Overlay -->
+  <div id="hud">
+    <!-- Top Status Bar -->
+    <div class="hud-top">
+      <div>
+        <div class="hud-stage" id="stage-name">MISSION 01: PACIFIC SUNSET COAST</div>
+        <div class="hud-track-info" id="track-info">🎵 BGM: FINAL TAKE OFF (FM-SYNTH REMAKE)</div>
+      </div>
+      <div class="hud-score-box">
+        <div style="font-size: 14px; letter-spacing: 2px; color:#aaa;">SCORE</div>
+        <div class="hud-score-val" id="score-val">000000</div>
+      </div>
+      <div class="hud-speed-box">
+        <div style="font-size: 14px; letter-spacing: 2px; color:#ff8888;">AIR SPEED</div>
+        <div>MACH <span id="speed-val">2.2</span></div>
+      </div>
+    </div>
+
+    <!-- Combo & Tech Rank Counter -->
+    <div class="hud-combo-box" id="hud-combo-box">
+      <div class="combo-count" id="combo-count">COMBO x5!</div>
+      <div class="combo-rank" id="combo-rank">S RANK</div>
+    </div>
+
+    <!-- Stage 3 Boss Health Bar -->
+    <div id="boss-hud">
+      <div class="boss-title">⚠️ SUPERFORTRESS XB-0 HRAESVELGR ⚠️</div>
+      <div class="boss-bar-outer">
+        <div class="boss-bar-inner" id="boss-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Incoming Threat Warning Alert -->
+    <div id="warning-banner">
+      <div class="warning-text">⚠️ WARNING! MISSILE ALERT ⚠️</div>
+      <div class="warning-sub">PRESS [ Q / E ] TO BARREL ROLL TO EVADE!</div>
+    </div>
+
+    <!-- Near-Miss Evade Floating Notification -->
+    <div id="evade-banner">⚡ NEAR MISS! MISSILE EVADED! +5000 ⚡</div>
+
+    <!-- Climax Active Text -->
+    <div class="climax-active-text" id="climax-text">CLIMAX MODE!!</div>
+
+    <!-- AWACS Tactical Radio Comms Box -->
+    <div id="radio-box">
+      <div class="radio-sender" id="radio-sender">📻 [AWACS OVERSIGHT]</div>
+      <div class="radio-message" id="radio-message">Tomcat 1, all bandits cleared in sector!</div>
+    </div>
+
+    <!-- Bottom Ammo, Armor, Climax Bar -->
+    <div class="missile-container">
+      MISSILE: <span class="missile-val" id="missile-val">60</span>
+    </div>
+
+    <div class="armor-container">
+      ARMOR: <span class="armor-val" id="armor-val">100%</span>
+      <div class="armor-bar-outer">
+        <div class="armor-bar-inner" id="armor-fill"></div>
+      </div>
+    </div>
+
+    <div class="climax-container">
+      <div class="climax-label" id="climax-status-lbl">CLIMAX GAUGE</div>
+      <div class="climax-bar-outer" id="climax-box">
+        <div class="climax-bar-inner" id="climax-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Touch Controls Overlay (iPad / iPhone / Touchscreen) -->
+  <div id="touch-controls">
+    <!-- Virtual Flight Stick Zone -->
+    <div class="touch-stick-zone" id="touch-stick-zone">
+      <div class="touch-stick-thumb" id="touch-stick-thumb"></div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="touch-action-buttons">
+      <button class="btn-touch btn-climax-touch" id="btn-touch-climax">CLIMAX</button>
+      <button class="btn-touch" id="btn-touch-roll">ROLL</button>
+      <button class="btn-touch" id="btn-touch-fire">FIRE</button>
+    </div>
+  </div>
+
+  <!-- Instructions & Start Screen -->
+  <div id="overlay">
+    <h1>AFTER BURNER</h1>
+    <h2>⚡ CLIMAX: LEGACY EDITION ⚡</h2>
+    <div class="instructions">
+      <p><span class="key-hint">滑鼠 / WASD</span>：飛行轉向俯仰（戰機與準心跟隨）</p>
+      <p><span class="key-hint">空白鍵 / 滑鼠左鍵</span>：火神機砲掃射 + 多目標鎖定微型飛彈齊射</p>
+      <p><span class="key-hint">W 鍵 / Shift</span>：全開後燃器 (AFTERBURNER) 極速狂飆 (可變翼後掠合攏)</p>
+      <p><span class="key-hint">Q / E 鍵 或 觸控 ROLL</span>：<b style="color:#00ffff;">360° 桶滾特技 (BARREL ROLL - 擦彈閃避無敵幀！)</b></p>
+      <p><span class="key-hint">C 鍵 / 滑鼠右鍵</span>：<b style="color:#ffe600;">💥 CLIMAX MODE (全螢幕超時空極限鎖定子彈時間)</b></p>
+      <p><span class="key-hint">V 鍵</span>：<b style="color:#00ff88;">切換第一人稱座艙視角 (COCKPIT VIEW) / 第三人物追尾視角</b></p>
+      <p><span class="key-hint">支援手把 (Gamepad)</span>：支援 Xbox / PS 手把雙類比搖桿飛行操縱</p>
+    </div>
+    <div class="click-prompt">👉 點擊螢幕啟動引擎起飛 👈</div>
+  </div>
+
+  <!-- Master Game Script -->
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
