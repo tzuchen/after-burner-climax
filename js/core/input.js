@@ -100,8 +100,8 @@ export class InputManager {
     });
 
     window.addEventListener('mousedown', (e) => {
-      if (!state.started) {
-        if (this.callbacks.onStartGame) this.callbacks.onStartGame();
+      // In hangar or route branching, UI buttons handle their own interactions
+      if (state.inHangar || state.isSelectingRoute || !state.started) {
         return;
       }
       if (e.button === 0) {

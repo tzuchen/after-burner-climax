@@ -155,54 +155,95 @@ class GameApp {
     const btnRoute0 = document.getElementById('btn-route-0');
     const btnRoute1 = document.getElementById('btn-route-1');
 
+    const handleEnterHangar = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (overlay) overlay.style.display = 'none';
+      if (hangarUI) {
+        hangarUI.style.display = 'flex';
+        hangarUI.classList.remove('hidden');
+      }
+      sound.init();
+    };
+
     if (overlay) {
-      overlay.addEventListener('click', () => {
-        overlay.style.display = 'none';
-        if (hangarUI) hangarUI.style.display = 'flex';
-        sound.init();
-      });
+      overlay.addEventListener('click', handleEnterHangar);
+      overlay.addEventListener('touchend', handleEnterHangar, { passive: false });
     }
 
+    const handlePrev = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.hangar.prevAircraft();
+    };
     if (btnPrev) {
-      btnPrev.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.hangar.prevAircraft();
-      });
+      btnPrev.addEventListener('click', handlePrev);
+      btnPrev.addEventListener('touchend', handlePrev, { passive: false });
     }
 
+    const handleNext = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.hangar.nextAircraft();
+    };
     if (btnNext) {
-      btnNext.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.hangar.nextAircraft();
-      });
+      btnNext.addEventListener('click', handleNext);
+      btnNext.addEventListener('touchend', handleNext, { passive: false });
     }
 
+    const handleSortie = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.launchSortie();
+    };
     if (btnSortie) {
-      btnSortie.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.launchSortie();
-      });
+      btnSortie.addEventListener('click', handleSortie);
+      btnSortie.addEventListener('touchend', handleSortie, { passive: false });
     }
 
+    const handleRoute0 = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.selectRoute(0);
+    };
     if (btnRoute0) {
-      btnRoute0.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectRoute(0);
-      });
+      btnRoute0.addEventListener('click', handleRoute0);
+      btnRoute0.addEventListener('touchend', handleRoute0, { passive: false });
     }
 
-    if (btnRoute1) {
-      btnRoute1.addEventListener('click', (e) => {
+    const handleRoute1 = (e) => {
+      if (e) {
+        e.preventDefault();
         e.stopPropagation();
-        this.selectRoute(1);
-      });
+      }
+      this.selectRoute(1);
+    };
+    if (btnRoute1) {
+      btnRoute1.addEventListener('click', handleRoute1);
+      btnRoute1.addEventListener('touchend', handleRoute1, { passive: false });
     }
   }
 
   launchSortie() {
-    if (state.started) return;
+    if (state.started && !state.inHangar) return;
+
+    // Immediately hide and disable Hangar UI
     const hangarUI = document.getElementById('hangar-ui');
-    if (hangarUI) hangarUI.style.display = 'none';
+    if (hangarUI) {
+      hangarUI.style.display = 'none';
+      hangarUI.classList.add('hidden');
+      hangarUI.style.setProperty('display', 'none', 'important');
+    }
 
     // Swap active player model mesh if needed
     const selectedObj = this.hangar.fleetMeshes.get(state.selectedAircraftId);
@@ -215,6 +256,7 @@ class GameApp {
 
     this.hangar.hide();
     this.player.group.position.set(0, 15, 0);
+    this.player.group.rotation.set(0, 0, 0);
 
     state.inHangar = false;
     state.started = true;
@@ -222,6 +264,7 @@ class GameApp {
     sound.playSonicBoom();
 
     this.camera.position.set(0, 15, 45);
+    this.camera.rotation.set(0, 0, 0);
     music.playTrack(state.getCurrentStage().bgmTrack);
     radio.calloutMissionStart();
   }
