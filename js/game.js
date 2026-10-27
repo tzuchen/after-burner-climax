@@ -78,8 +78,16 @@ class GameApp {
   }
 
   bindInputCallbacks() {
+    this.input.callbacks.onEnterHangar = () => {
+      this.enterHangar();
+    };
+
     this.input.callbacks.onStartGame = () => {
-      if (state.inHangar) this.launchSortie();
+      if (state.inTitle) {
+        this.enterHangar();
+      } else if (state.inHangar) {
+        this.launchSortie();
+      }
     };
 
     this.input.callbacks.onPrevAircraft = () => {
@@ -95,25 +103,25 @@ class GameApp {
     };
 
     this.input.callbacks.onDeployFlares = () => {
-      if (state.started && !this.isRefueling && !state.inHangar) {
+      if (state.started && !this.isRefueling && !state.inHangar && !state.inTitle) {
         this.combat.deployFlares(this.player.group);
       }
     };
 
     this.input.callbacks.onFireSpecialWeapon = () => {
-      if (state.started && !this.isRefueling && !state.inHangar) {
+      if (state.started && !this.isRefueling && !state.inHangar && !state.inTitle) {
         this.combat.fireSpecialWeapon(this.player.group, this.enemyAI.enemies, this.boss);
       }
     };
 
     this.input.callbacks.onFireVulcan = () => {
-      if (state.started && !this.isRefueling && !state.inHangar) {
+      if (state.started && !this.isRefueling && !state.inHangar && !state.inTitle) {
         this.combat.firePlayerVulcan(this.player.group);
       }
     };
 
     this.input.callbacks.onFireMissile = () => {
-      if (state.started && !this.isRefueling && !state.inHangar) {
+      if (state.started && !this.isRefueling && !state.inHangar && !state.inTitle) {
         const lockedTargets = [];
         this.enemyAI.enemies.forEach(en => { if (en.isLocked && en.alive) lockedTargets.push(en); });
         if (this.boss && this.boss.active && this.boss.alive) {
@@ -124,19 +132,19 @@ class GameApp {
     };
 
     this.input.callbacks.onBarrelRoll = (dir) => {
-      if (state.started && !state.inHangar) {
+      if (state.started && !state.inHangar && !state.inTitle) {
         this.triggerBarrelRoll(dir);
       }
     };
 
     this.input.callbacks.onToggleClimax = () => {
-      if (state.started && !state.inHangar) {
+      if (state.started && !state.inHangar && !state.inTitle) {
         this.triggerClimaxMode();
       }
     };
 
     this.input.callbacks.onToggleView = () => {
-      if (!state.started || state.inHangar) return;
+      if (!state.started || state.inHangar || state.inTitle) return;
       state.isCockpitView = !state.isCockpitView;
       const cockpitOverlay = document.getElementById('cockpit-overlay');
       if (cockpitOverlay) cockpitOverlay.style.display = state.isCockpitView ? 'block' : 'none';
@@ -144,6 +152,25 @@ class GameApp {
         this.player.parts.cockpitInterior.visible = state.isCockpitView;
       }
     };
+  }
+
+  enterHangar() {
+    const overlay = document.getElementById('overlay');
+    const hangarUI = document.getElementById('hangar-ui');
+
+    if (overlay) {
+      overlay.style.display = 'none';
+      overlay.classList.add('hidden');
+      overlay.style.setProperty('display', 'none', 'important');
+    }
+    if (hangarUI) {
+      hangarUI.style.display = 'flex';
+      hangarUI.classList.remove('hidden');
+    }
+
+    state.inTitle = false;
+    state.inHangar = true;
+    sound.init();
   }
 
   initUIListeners() {
@@ -160,12 +187,7 @@ class GameApp {
         e.preventDefault();
         e.stopPropagation();
       }
-      if (overlay) overlay.style.display = 'none';
-      if (hangarUI) {
-        hangarUI.style.display = 'flex';
-        hangarUI.classList.remove('hidden');
-      }
-      sound.init();
+      this.enterHangar();
     };
 
     if (overlay) {
@@ -235,9 +257,16 @@ class GameApp {
   }
 
   launchSortie() {
-    if (state.started && !state.inHangar) return;
+    if (state.started && !state.inHangar && !state.inTitle) return;
 
-    // Immediately hide and disable Hangar UI
+    // Immediately guarantee BOTH Title overlay and Hangar UI are completely hidden!
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+      overlay.classList.add('hidden');
+      overlay.style.setProperty('display', 'none', 'important');
+    }
+
     const hangarUI = document.getElementById('hangar-ui');
     if (hangarUI) {
       hangarUI.style.display = 'none';
@@ -258,6 +287,7 @@ class GameApp {
     this.player.group.position.set(0, 15, 0);
     this.player.group.rotation.set(0, 0, 0);
 
+    state.inTitle = false;
     state.inHangar = false;
     state.started = true;
     sound.init();
@@ -355,7 +385,15 @@ class GameApp {
     const dtReal = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
 
-    // 0. 3D Hangar Turntable Inspection Mode
+    // 0. Title Screen Mode: gentle camera bobbing & turntable rotation behind overlay
+    if (state.inTitle) {
+      this.hangar.update(dtReal);
+      this.camera.position.set(0, 7 + Math.sin(now * 0.0015) * 1.5, 38);
+      this.camera.lookAt(0, 1.5, 0);
+      return;
+    }
+
+    // 0.1 3D Hangar Turntable Inspection Mode
     if (state.inHangar) {
       this.hangar.update(dtReal);
       this.camera.position.set(0, 7 + Math.sin(now * 0.0015) * 1.5, 38);

@@ -18,6 +18,7 @@ export class InputManager {
       onToggleClimax: null,
       onToggleView: null,
       onStartGame: null,
+      onEnterHangar: null,
       onDeployFlares: null,
       onFireSpecialWeapon: null,
       onPrevAircraft: null,
@@ -36,7 +37,15 @@ export class InputManager {
       const k = e.key.toLowerCase();
       this.keys[k] = true;
 
-      // Hangar selection shortcuts
+      // 1. Title screen shortcut: Space or Enter enters the 3D Hangar
+      if (state.inTitle) {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          if (this.callbacks.onEnterHangar) this.callbacks.onEnterHangar();
+          return;
+        }
+      }
+
+      // 2. Hangar selection shortcuts
       if (state.inHangar) {
         if (k === 'arrowleft' || k === 'a') {
           if (this.callbacks.onPrevAircraft) this.callbacks.onPrevAircraft();
@@ -52,7 +61,7 @@ export class InputManager {
         }
       }
 
-      // Route branching selection shortcuts
+      // 3. Route branching selection shortcuts
       if (state.isSelectingRoute) {
         if (k === '1') {
           if (this.callbacks.onSelectRoute) this.callbacks.onSelectRoute(0);
@@ -64,27 +73,30 @@ export class InputManager {
         }
       }
 
-      if (e.code === 'Space') {
-        if (this.callbacks.onFireVulcan) this.callbacks.onFireVulcan();
-        if (this.callbacks.onFireMissile) this.callbacks.onFireMissile();
-      }
-      if (k === 'x') {
-        if (this.callbacks.onDeployFlares) this.callbacks.onDeployFlares();
-      }
-      if (k === 'f') {
-        if (this.callbacks.onFireSpecialWeapon) this.callbacks.onFireSpecialWeapon();
-      }
-      if (k === 'q') {
-        if (this.callbacks.onBarrelRoll) this.callbacks.onBarrelRoll(-1);
-      }
-      if (k === 'e') {
-        if (this.callbacks.onBarrelRoll) this.callbacks.onBarrelRoll(1);
-      }
-      if (k === 'c') {
-        if (this.callbacks.onToggleClimax) this.callbacks.onToggleClimax();
-      }
-      if (k === 'v') {
-        if (this.callbacks.onToggleView) this.callbacks.onToggleView();
+      // 4. In-flight combat actions
+      if (state.started && !state.inHangar && !state.inTitle) {
+        if (e.code === 'Space') {
+          if (this.callbacks.onFireVulcan) this.callbacks.onFireVulcan();
+          if (this.callbacks.onFireMissile) this.callbacks.onFireMissile();
+        }
+        if (k === 'x') {
+          if (this.callbacks.onDeployFlares) this.callbacks.onDeployFlares();
+        }
+        if (k === 'f') {
+          if (this.callbacks.onFireSpecialWeapon) this.callbacks.onFireSpecialWeapon();
+        }
+        if (k === 'q') {
+          if (this.callbacks.onBarrelRoll) this.callbacks.onBarrelRoll(-1);
+        }
+        if (k === 'e') {
+          if (this.callbacks.onBarrelRoll) this.callbacks.onBarrelRoll(1);
+        }
+        if (k === 'c') {
+          if (this.callbacks.onToggleClimax) this.callbacks.onToggleClimax();
+        }
+        if (k === 'v') {
+          if (this.callbacks.onToggleView) this.callbacks.onToggleView();
+        }
       }
     });
 

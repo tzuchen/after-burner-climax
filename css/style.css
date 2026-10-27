@@ -478,6 +478,10 @@ body, html {
   text-align: center;
   padding: 20px;
 }
+#overlay.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
 #overlay h1 {
   font-size: 64px;
   letter-spacing: 6px;

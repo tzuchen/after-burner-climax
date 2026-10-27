@@ -12,7 +12,8 @@ export class GameState {
 
   reset() {
     this.started = false;
-    this.inHangar = true; // Start in 3D Hangar inspection
+    this.inTitle = true; // Title / Start overlay screen active
+    this.inHangar = false; // 3D Hangar inspection after entering
     this.gameOver = false;
     this.victory = false;
     this.currentStageIndex = 0;
