@@ -12,6 +12,9 @@ export class HUDController {
     this.stageNameEl = document.getElementById('stage-name');
     this.trackInfoEl = document.getElementById('track-info');
     this.missileValEl = document.getElementById('missile-val');
+    this.flareValEl = document.getElementById('flare-val');
+    this.spwNameEl = document.getElementById('spw-name');
+    this.spwAmmoEl = document.getElementById('spw-ammo');
     this.armorValEl = document.getElementById('armor-val');
     this.armorFillEl = document.getElementById('armor-fill');
     this.climaxFillEl = document.getElementById('climax-fill');
@@ -38,8 +41,12 @@ export class HUDController {
     if (this.stageNameEl) this.stageNameEl.innerText = stageConfig.name;
     if (this.trackInfoEl) this.trackInfoEl.innerText = `🎵 BGM: ${stageConfig.bgmTrack.replace(/_/g, ' ')}`;
 
-    // 3. Ammo
+    // 3. Ammo & Weapons
     if (this.missileValEl) this.missileValEl.innerText = state.missiles;
+    if (this.flareValEl) this.flareValEl.innerText = state.flares;
+    const ac = state.getSelectedAircraft();
+    if (this.spwNameEl) this.spwNameEl.innerText = ac.specialWeapon.name;
+    if (this.spwAmmoEl) this.spwAmmoEl.innerText = state.specialWeaponAmmo;
 
     // 4. Armor Bar
     if (this.armorValEl) this.armorValEl.innerText = `${Math.round(state.armor)}%`;

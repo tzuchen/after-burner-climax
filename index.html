@@ -73,8 +73,16 @@
     </div>
 
     <!-- Bottom Ammo, Armor, Climax Bar -->
-    <div class="missile-container">
-      MISSILE: <span class="missile-val" id="missile-val">60</span>
+    <div class="hud-bottom-weapons">
+      <div class="missile-container">
+        MISSILE: <span class="missile-val" id="missile-val">60</span>
+      </div>
+      <div class="flare-container">
+        FLARE: <span class="flare-val" id="flare-val">15</span> <span class="hud-hint">[X]</span>
+      </div>
+      <div class="spw-container">
+        <span class="spw-badge">SPW [F]</span> <span class="spw-name" id="spw-name">AIM-54 PHOENIX</span>: <span class="spw-ammo" id="spw-ammo">12</span>
+      </div>
     </div>
 
     <div class="armor-container">
@@ -103,7 +111,69 @@
     <div class="touch-action-buttons">
       <button class="btn-touch btn-climax-touch" id="btn-touch-climax">CLIMAX</button>
       <button class="btn-touch" id="btn-touch-roll">ROLL</button>
-      <button class="btn-touch" id="btn-touch-fire">FIRE</button>
+      <button class="btn-touch btn-spw-touch" id="btn-touch-spw">SPW</button>
+      <button class="btn-touch btn-flare-touch" id="btn-touch-flare">FLARE</button>
+      <button class="btn-touch btn-fire-touch" id="btn-touch-fire">FIRE</button>
+    </div>
+  </div>
+
+  <!-- 3D Hangar Aircraft Showcase & Fleet Selection Overlay -->
+  <div id="hangar-ui">
+    <div class="hangar-header">
+      <div class="hangar-title">ARCADE FIGHTER FLEET // 戰機選拔</div>
+      <div class="hangar-sub">USE [A / D] OR ARROW KEYS TO INSPECT FLEET</div>
+    </div>
+
+    <div class="hangar-carousel-controls">
+      <button class="btn-hangar-nav" id="btn-hangar-prev">◀ PREV [A]</button>
+      <div class="hangar-card">
+        <div class="hangar-plane-badge" id="hangar-plane-cat">VARIABLE-SWEEP INTERCEPTOR</div>
+        <h2 id="hangar-plane-name">F-14D SUPER TOMCAT</h2>
+        <p class="hangar-desc" id="hangar-plane-desc">Legendary U.S. Navy supersonic interceptor with dynamic swing wings and long-range AIM-54 Phoenix multi-lock missiles.</p>
+        <div class="hangar-spw-box">
+          <span class="spw-tag">SPECIAL WEAPON</span>
+          <span id="hangar-spw-name">AIM-54 PHOENIX (HEXA-LOCK)</span>
+        </div>
+        <div class="hangar-stats">
+          <div class="stat-row">
+            <span>SPEED</span>
+            <div class="stat-bar-outer"><div class="stat-bar-inner" id="stat-bar-speed" style="width: 92%;"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>ARMOR</span>
+            <div class="stat-bar-outer"><div class="stat-bar-inner" id="stat-bar-armor" style="width: 88%;"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>MOBILITY</span>
+            <div class="stat-bar-outer"><div class="stat-bar-inner" id="stat-bar-mobility" style="width: 82%;"></div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-hangar-nav" id="btn-hangar-next">NEXT [D] ▶</button>
+    </div>
+
+    <button class="btn-sortie" id="btn-sortie">⚡ SORTIE // 起飛出擊 [SPACE / CLICK] ⚡</button>
+  </div>
+
+  <!-- Branching Route Tactical Decision Modal -->
+  <div id="route-modal">
+    <div class="route-header">
+      <h2>⚠️ TACTICAL BRANCHING POINT // 航路分歧選擇 ⚠️</h2>
+      <div class="route-timer" id="route-timer">AUTO-SELECTING ROUTE A IN 5s...</div>
+    </div>
+    <div class="route-cards-grid">
+      <div class="route-card" id="btn-route-0">
+        <div class="route-card-badge">ROUTE A [PRESS 1]</div>
+        <h3 id="route-0-name">MISSION 02A: GRAND CANYON</h3>
+        <p id="route-0-desc">Maintain low altitude below radar ceiling. Navigate through towering red sandstone rock pillars.</p>
+        <button class="btn-choose-route">ENGAGE ROUTE A ▶</button>
+      </div>
+      <div class="route-card" id="btn-route-1">
+        <div class="route-card-badge">ROUTE B [PRESS 2]</div>
+        <h3 id="route-1-name">MISSION 02B: POLAR GLACIERS</h3>
+        <p id="route-1-desc">Sub-zero frozen waters. High-speed blizzard conditions and icy fjord dogfighting.</p>
+        <button class="btn-choose-route">ENGAGE ROUTE B ▶</button>
+      </div>
     </div>
   </div>
 
@@ -114,13 +184,15 @@
     <div class="instructions">
       <p><span class="key-hint">滑鼠 / WASD</span>：飛行轉向俯仰（戰機與準心跟隨）</p>
       <p><span class="key-hint">空白鍵 / 滑鼠左鍵</span>：火神機砲掃射 + 多目標鎖定微型飛彈齊射</p>
-      <p><span class="key-hint">W 鍵 / Shift</span>：全開後燃器 (AFTERBURNER) 極速狂飆 (可變翼後掠合攏)</p>
+      <p><span class="key-hint">F 鍵 / 觸控 SPW</span>：<b style="color:#00ffff;">特殊兵器齊射 (AIM-54 六重鎖定 / CBU-97 集束炸彈 / 30mm 旋轉機砲)</b></p>
+      <p><span class="key-hint">X 鍵 / 觸控 FLARE</span>：<b style="color:#ffaa00;">熱焰彈誘餌 (CHAFF / FLARES - 誘騙擺脫敵方追熱飛彈！)</b></p>
+      <p><span class="key-hint">W 鍵 / Shift</span>：全開後燃器 (AFTERBURNER) 極速狂飆 (音爆雙連擊 + 音錐蒸氣)</p>
       <p><span class="key-hint">Q / E 鍵 或 觸控 ROLL</span>：<b style="color:#00ffff;">360° 桶滾特技 (BARREL ROLL - 擦彈閃避無敵幀！)</b></p>
-      <p><span class="key-hint">C 鍵 / 滑鼠右鍵</span>：<b style="color:#ffe600;">💥 CLIMAX MODE (全螢幕超時空極限鎖定子彈時間)</b></p>
+      <p><span class="key-hint">C 鍵 / 滑鼠右鍵</span>：<b style="color:#ffe600;">💥 CLIMAX MODE (全螢幕超時空極限鎖定子彈時間 0.32x)</b></p>
       <p><span class="key-hint">V 鍵</span>：<b style="color:#00ff88;">切換第一人稱座艙視角 (COCKPIT VIEW) / 第三人物追尾視角</b></p>
-      <p><span class="key-hint">支援手把 (Gamepad)</span>：支援 Xbox / PS 手把雙類比搖桿飛行操縱</p>
+      <p><span class="key-hint">機隊選拔</span>：支援 F-14D 雄貓、F-15E 打擊鷹、F/A-18E 超級大黃蜂、A-10C 雷霆二式</p>
     </div>
-    <div class="click-prompt">👉 點擊螢幕啟動引擎起飛 👈</div>
+    <div class="click-prompt">👉 點擊螢幕進入 3D 機庫整備出擊 👈</div>
   </div>
 
   <!-- Master Game Script -->

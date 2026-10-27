@@ -11,7 +11,11 @@ import {
   createPlayerMissileMesh,
   createEnemyMissileMesh,
   createVulcanTracerMesh,
-  createEnemyTracerMesh
+  createEnemyTracerMesh,
+  createPhoenixMissileMesh,
+  createFlareMesh,
+  createClusterBombMesh,
+  createHeavy30mmTracerMesh
 } from '../models/weapons.js';
 
 export class CombatSystem {
@@ -24,6 +28,8 @@ export class CombatSystem {
     this.enemyMissiles = [];
     this.playerBullets = [];
     this.enemyBullets = [];
+    this.flareDecoys = [];
+    this.clusterBombs = [];
     this.lockBoxes = new Map(); // targetId -> DOM element
 
     this.warningTimer = 0;
@@ -60,6 +66,152 @@ export class CombatSystem {
       this.scene.add(b);
       this.playerBullets.push({ mesh: b, zSpeed: -1400, life: 1.2 });
     });
+  }
+
+  // --- COUNTERMEASURE FLARES ---
+  deployFlares(playerGroup) {
+    if (!state.deployFlares()) return;
+    sound.playFlareLaunch();
+    radio.speak("Countermeasures deployed! Chaff and flares away!", "RIO", false);
+
+    const offsets = [-4.5, -1.8, 1.8, 4.5];
+    offsets.forEach(ox => {
+      const mesh = createFlareMesh();
+      mesh.position.set(
+        playerGroup.position.x + ox,
+        playerGroup.position.y - 1.2,
+        playerGroup.position.z + 2.0
+      );
+      this.scene.add(mesh);
+      this.flareDecoys.push({
+        mesh: mesh,
+        velocity: new THREE.Vector3(ox * 18, -12, 95 + Math.random() * 40),
+        life: 2.2,
+        smokeTimer: 0
+      });
+    });
+
+    // Divert nearby incoming enemy missiles
+    let divertedCount = 0;
+    this.enemyMissiles.forEach(em => {
+      const dist = em.mesh.position.distanceTo(playerGroup.position);
+      if (dist < CONFIG.FLARES.DECOY_RADIUS && !em.decoyed) {
+        em.decoyed = true;
+        em.decoyTarget = this.flareDecoys[this.flareDecoys.length - 1];
+        divertedCount++;
+      }
+    });
+
+    if (divertedCount > 0) {
+      state.addScore(CONFIG.SCORE.FLARE_DECOY_SUCCESS * divertedCount);
+      const evBanner = document.getElementById('evade-banner');
+      if (evBanner) {
+        evBanner.innerText = `⚡ MISSILE SPOOFED! FLARE DECOY SUCCESS! +${CONFIG.SCORE.FLARE_DECOY_SUCCESS * divertedCount} ⚡`;
+        evBanner.style.display = 'block';
+        this.evadeBannerTimer = 1.6;
+      }
+    }
+  }
+
+  // --- SPECIAL WEAPONS SALVO ---
+  fireSpecialWeapon(playerGroup, enemies, boss) {
+    const spw = state.fireSpecialWeapon();
+    if (!spw) return;
+
+    if (spw.type === 'MULTI_HOMING') {
+      // AIM-54 Phoenix Hexa-Lock (F-14D)
+      radio.speak("Fox Three! AIM-54 Phoenix hexa-salvo away!", "RIO MAVERICK", true);
+      sound.playMissileLaunch();
+
+      const availableTargets = [];
+      enemies.forEach(en => { if (en.alive) availableTargets.push(en); });
+      if (boss && boss.active && boss.alive) {
+        boss.turrets.forEach(t => { if (t.alive) availableTargets.push(t); });
+        availableTargets.push({ id: 999, mesh: boss.coreMesh, alive: true, isBossCore: true });
+      }
+
+      for (let i = 0; i < spw.lockCount; i++) {
+        const target = availableTargets[i % Math.max(1, availableTargets.length)] || null;
+        const mesh = createPhoenixMissileMesh();
+        const ox = (i - 2.5) * 3.2;
+        mesh.position.set(playerGroup.position.x + ox, playerGroup.position.y - 1.5, playerGroup.position.z);
+        this.scene.add(mesh);
+
+        this.playerMissiles.push({
+          mesh: mesh,
+          target: target,
+          velocity: new THREE.Vector3(ox * 3.5, 5, -880),
+          life: 3.5,
+          smokeTimer: 0,
+          isHeavyPhoenix: true,
+          damage: spw.damage
+        });
+      }
+    } else if (spw.type === 'CLUSTER_BOMB') {
+      // CBU-97 Cluster Disperser (F-15E)
+      radio.speak("Cluster disperser deployed! High explosive carpet!", "STRIKE EAGLE 1", true);
+      sound.playMissileLaunch();
+
+      for (let i = 0; i < spw.lockCount; i++) {
+        const mesh = createClusterBombMesh();
+        const spreadX = (i - 3.5) * 12;
+        mesh.position.set(playerGroup.position.x, playerGroup.position.y - 2, playerGroup.position.z - 5);
+        this.scene.add(mesh);
+
+        this.clusterBombs.push({
+          mesh: mesh,
+          velocity: new THREE.Vector3(spreadX * 4, -5, -650),
+          fuseTimer: 0.5 + i * 0.08,
+          spreadX: spreadX,
+          damage: spw.damage
+        });
+      }
+    } else if (spw.type === 'AGILE_HOMING') {
+      // AIM-9X High-Off-Boresight (F/A-18E)
+      radio.speak("Fox Two! AIM-9X high-off-boresight tracking!", "HORNET LEAD", true);
+      sound.playMissileLaunch();
+
+      const targets = enemies.filter(en => en.alive);
+      for (let i = 0; i < spw.lockCount; i++) {
+        const target = targets[i % Math.max(1, targets.length)] || null;
+        const mesh = createPlayerMissileMesh();
+        const ox = (i % 2 === 0 ? -1 : 1) * 6.5;
+        mesh.position.set(playerGroup.position.x + ox, playerGroup.position.y, playerGroup.position.z);
+        this.scene.add(mesh);
+
+        this.playerMissiles.push({
+          mesh: mesh,
+          target: target,
+          velocity: new THREE.Vector3(ox * 20, 0, -780),
+          life: 3.2,
+          smokeTimer: 0,
+          isAgileAim9X: true,
+          damage: spw.damage
+        });
+      }
+    } else if (spw.type === 'GATLING_BURST') {
+      // GAU-8/A 30mm Avenger Gatling Buzz (A-10C)
+      sound.playGatlingBurst();
+      radio.speak("BRRRTTTT! 30mm Avenger emptying the drum!", "WARTHOG TANKBUSTER", true);
+
+      for (let i = 0; i < 24; i++) {
+        setTimeout(() => {
+          if (!state.started) return;
+          const b = createHeavy30mmTracerMesh();
+          const spreadX = (Math.random() - 0.5) * 5;
+          const spreadY = (Math.random() - 0.5) * 4;
+          b.position.set(playerGroup.position.x + spreadX - 0.35, playerGroup.position.y + spreadY - 0.5, playerGroup.position.z - 8);
+          this.scene.add(b);
+          this.playerBullets.push({
+            mesh: b,
+            zSpeed: -1900,
+            life: 1.0,
+            isHeavy30mm: true,
+            damage: spw.damage
+          });
+        }, i * 14);
+      }
+    }
   }
 
   fireEnemyMissile(originPos, initialVel) {
@@ -213,13 +365,20 @@ export class CombatSystem {
       const em = this.enemyMissiles[i];
       em.life -= dt;
 
-      const toPlayer = new THREE.Vector3().subVectors(playerGroup.position, em.mesh.position);
-      const dist = toPlayer.length();
+      // Check if decoyed by flare
+      let trackTargetPos = playerGroup.position;
+      if (em.decoyed && em.decoyTarget && em.decoyTarget.life > 0) {
+        trackTargetPos = em.decoyTarget.mesh.position;
+      }
 
-      if (dist < 950) hasIncomingThreat = true;
+      const toTarget = new THREE.Vector3().subVectors(trackTargetPos, em.mesh.position);
+      const dist = toTarget.length();
 
-      toPlayer.normalize();
-      em.velocity.lerp(toPlayer.multiplyScalar(680), dt * (state.isClimax ? 1.2 : 4.5));
+      if (!em.decoyed && dist < 950) hasIncomingThreat = true;
+
+      toTarget.normalize();
+      const steerFactor = em.decoyed ? 7.5 : (state.isClimax ? 1.2 : 4.5);
+      em.velocity.lerp(toTarget.multiplyScalar(680), dt * steerFactor);
       em.mesh.position.addScaledVector(em.velocity, dt);
       em.mesh.lookAt(em.mesh.position.clone().add(em.velocity));
 
@@ -227,12 +386,18 @@ export class CombatSystem {
       em.smokeTimer += dt;
       if (em.smokeTimer > 0.035) {
         em.smokeTimer = 0;
-        this.particles.createSmokePuff(em.mesh.position, 0xff2222);
+        this.particles.createSmokePuff(em.mesh.position, em.decoyed ? 0xffaa00 : 0xff2222);
       }
 
       // Proximity & Evasion Check
       if (dist < 22) {
-        if (state.isRolling) {
+        if (em.decoyed) {
+          // Missiles detonated on flare decoy!
+          this.particles.createExplosion(em.mesh.position, 22);
+          this.scene.remove(em.mesh);
+          this.enemyMissiles.splice(i, 1);
+          continue;
+        } else if (state.isRolling) {
           // --- SUCCESSFUL BARREL ROLL EVASION (Near-Miss) ---
           sound.playEvadeSuccess();
           state.addScore(CONFIG.SCORE.NEAR_MISS_EVADE);
@@ -281,6 +446,68 @@ export class CombatSystem {
       if (em.life <= 0 || em.mesh.position.z > 160) {
         this.scene.remove(em.mesh);
         this.enemyMissiles.splice(i, 1);
+      }
+    }
+
+    // Update Countermeasure Flares
+    for (let i = this.flareDecoys.length - 1; i >= 0; i--) {
+      const fl = this.flareDecoys[i];
+      fl.life -= dtReal;
+      fl.mesh.position.addScaledVector(fl.velocity, dtReal);
+      fl.velocity.y -= 16 * dtReal;
+      fl.velocity.z += 55 * dtReal;
+
+      fl.smokeTimer += dtReal;
+      if (fl.smokeTimer > 0.04) {
+        fl.smokeTimer = 0;
+        this.particles.createSmokePuff(fl.mesh.position, 0xff7700);
+      }
+
+      if (fl.life <= 0) {
+        this.scene.remove(fl.mesh);
+        this.flareDecoys.splice(i, 1);
+      }
+    }
+
+    // Update CBU-97 Cluster Bombs
+    for (let i = this.clusterBombs.length - 1; i >= 0; i--) {
+      const cb = this.clusterBombs[i];
+      cb.fuseTimer -= dtReal;
+      cb.mesh.position.addScaledVector(cb.velocity, dt);
+
+      if (cb.fuseTimer <= 0) {
+        const blastPos = cb.mesh.position.clone();
+        this.particles.createExplosion(blastPos, 45, true);
+        sound.playExplosion();
+
+        enemies.forEach(en => {
+          if (en.alive && en.mesh.position.distanceTo(blastPos) < 55) {
+            en.alive = false;
+            this.scene.remove(en.mesh);
+            const domBox = this.lockBoxes.get(en.id);
+            if (domBox) { domBox.remove(); this.lockBoxes.delete(en.id); }
+            this.particles.createExplosion(en.mesh.position, 28);
+            state.addScore(CONFIG.SCORE.KILL_AIR);
+            state.registerKill(state.isClimax);
+          }
+        });
+
+        if (boss && boss.active && boss.alive) {
+          boss.turrets.forEach(t => {
+            if (t.alive && t.mesh.position.distanceTo(blastPos) < 60) {
+              t.alive = false;
+              this.scene.remove(t.mesh);
+              state.addScore(CONFIG.SCORE.KILL_BOSS_TURRET);
+              this.particles.createExplosion(t.mesh.position, 35);
+            }
+          });
+          if (boss.coreMesh.position.distanceTo(blastPos) < 70) {
+            boss.damageCore(20);
+          }
+        }
+
+        this.scene.remove(cb.mesh);
+        this.clusterBombs.splice(i, 1);
       }
     }
 
@@ -379,10 +606,14 @@ export class CombatSystem {
     this.enemyMissiles.forEach(m => this.scene.remove(m.mesh));
     this.playerBullets.forEach(b => this.scene.remove(b.mesh));
     this.enemyBullets.forEach(b => this.scene.remove(b.mesh));
+    this.flareDecoys.forEach(f => this.scene.remove(f.mesh));
+    this.clusterBombs.forEach(c => this.scene.remove(c.mesh));
     this.playerMissiles = [];
     this.enemyMissiles = [];
     this.playerBullets = [];
     this.enemyBullets = [];
+    this.flareDecoys = [];
+    this.clusterBombs = [];
     this.lockBoxes.forEach(box => box.remove());
     this.lockBoxes.clear();
   }

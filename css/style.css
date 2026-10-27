@@ -532,6 +532,321 @@ body, html {
   to { box-shadow: 0 0 35px #ffe600; filter: brightness(1.6); }
 }
 
+/* Bottom Weapons HUD Group */
+.hud-bottom-weapons {
+  position: absolute;
+  bottom: 60px;
+  left: 35px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 20px;
+  text-shadow: 0 0 8px #ff4400;
+}
+.missile-container {
+  color: #fff;
+  font-weight: bold;
+}
+.missile-val {
+  color: #ffe600;
+  font-size: 26px;
+}
+.flare-container {
+  color: #ffaa00;
+  font-weight: bold;
+}
+.flare-val {
+  color: #00ffff;
+  font-size: 24px;
+}
+.hud-hint {
+  font-size: 14px;
+  color: #aaa;
+  margin-left: 4px;
+}
+.spw-container {
+  color: #00ffcc;
+  font-size: 17px;
+  background: rgba(0, 40, 60, 0.65);
+  border: 1px solid #00ffff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+}
+.spw-badge {
+  color: #ffe600;
+  font-weight: bold;
+  margin-right: 6px;
+}
+.spw-name {
+  color: #ffffff;
+}
+.spw-ammo {
+  color: #00ffff;
+  font-size: 22px;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+/* Touch Action Buttons Colors */
+.btn-spw-touch {
+  border-color: #00ffcc;
+  box-shadow: 0 0 15px #00ffcc;
+  color: #00ffcc;
+}
+.btn-flare-touch {
+  border-color: #ffaa00;
+  box-shadow: 0 0 15px #ffaa00;
+  color: #ffaa00;
+}
+.btn-fire-touch {
+  border-color: #ff3344;
+  box-shadow: 0 0 15px #ff3344;
+  color: #ff3344;
+}
+
+/* 3D HANGAR UI OVERLAY */
+#hangar-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 20px 30px 20px;
+  pointer-events: auto;
+  background: radial-gradient(circle at center, rgba(10, 20, 35, 0.4) 0%, rgba(2, 4, 10, 0.85) 100%);
+}
+.hangar-header {
+  text-align: center;
+}
+.hangar-title {
+  font-size: 44px;
+  color: #ffe600;
+  text-shadow: 0 0 20px #ff6600, 0 0 40px #ff0044;
+  letter-spacing: 4px;
+  transform: skew(-6deg);
+}
+.hangar-sub {
+  font-size: 15px;
+  color: #00ffff;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+.hangar-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  width: 100%;
+  max-width: 900px;
+}
+.btn-hangar-nav {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  padding: 16px 24px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+  box-shadow: 0 0 18px rgba(0, 255, 255, 0.4);
+  transition: all 0.15s ease;
+}
+.btn-hangar-nav:hover, .btn-hangar-nav:active {
+  background: #00ffff;
+  color: #000;
+  box-shadow: 0 0 28px #00ffff;
+}
+.hangar-card {
+  background: rgba(10, 16, 28, 0.85);
+  border: 2px solid rgba(0, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 24px 30px;
+  width: 520px;
+  box-shadow: 0 0 35px rgba(0, 150, 255, 0.4);
+  backdrop-filter: blur(10px);
+}
+.hangar-plane-badge {
+  display: inline-block;
+  background: #ffaa00;
+  color: #000;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.hangar-card h2 {
+  font-size: 32px;
+  color: #fff;
+  letter-spacing: 2px;
+  margin: 10px 0 6px 0;
+  text-shadow: 0 0 10px #00ffff;
+}
+.hangar-desc {
+  font-size: 14px;
+  color: #b0c4de;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+.hangar-spw-box {
+  background: rgba(0, 255, 120, 0.08);
+  border-left: 4px solid #00ff88;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.spw-tag {
+  color: #00ff88;
+  font-weight: bold;
+  margin-right: 8px;
+}
+.hangar-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #aaa;
+  letter-spacing: 1px;
+}
+.stat-bar-outer {
+  width: 320px;
+  height: 12px;
+  background: #111a24;
+  border: 1px solid #334455;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.stat-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #0088ff, #00ffff);
+  transition: width 0.3s ease;
+}
+.btn-sortie {
+  background: linear-gradient(90deg, #ff0044, #ff8800);
+  border: none;
+  color: #fff;
+  font-size: 26px;
+  letter-spacing: 3px;
+  padding: 16px 48px;
+  font-weight: bold;
+  border-radius: 35px;
+  cursor: pointer;
+  box-shadow: 0 0 30px #ff3300, 0 0 60px #ff0044;
+  transition: transform 0.15s, box-shadow 0.15s;
+  animation: pulseGlow 0.8s infinite alternate;
+}
+.btn-sortie:hover {
+  transform: scale(1.05);
+}
+
+/* BRANCHING ROUTE SELECTION MODAL */
+#route-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 18;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(3, 6, 18, 0.88);
+  backdrop-filter: blur(12px);
+  padding: 20px;
+}
+.route-header {
+  text-align: center;
+  margin-bottom: 35px;
+}
+.route-header h2 {
+  font-size: 42px;
+  color: #ffe600;
+  text-shadow: 0 0 20px #ff6600, 0 0 40px #ff0033;
+  letter-spacing: 3px;
+}
+.route-timer {
+  font-size: 18px;
+  color: #ff3344;
+  letter-spacing: 2px;
+  margin-top: 8px;
+  font-weight: bold;
+}
+.route-cards-grid {
+  display: flex;
+  gap: 40px;
+  width: 100%;
+  max-width: 950px;
+}
+.route-card {
+  flex: 1;
+  background: rgba(12, 18, 30, 0.9);
+  border: 2px solid #00ffff;
+  border-radius: 12px;
+  padding: 30px 25px;
+  cursor: pointer;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.route-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: #ffe600;
+  box-shadow: 0 0 45px rgba(255, 230, 0, 0.6);
+}
+.route-card-badge {
+  display: inline-block;
+  align-self: flex-start;
+  background: #ffe600;
+  color: #000;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.route-card h3 {
+  font-size: 26px;
+  color: #fff;
+  margin: 15px 0 10px 0;
+  letter-spacing: 1px;
+}
+.route-card p {
+  font-size: 15px;
+  color: #b0c4de;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+.btn-choose-route {
+  background: #00ffff;
+  border: none;
+  color: #000;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  box-shadow: 0 0 15px #00ffff;
+  transition: all 0.15s ease;
+}
+.btn-choose-route:hover {
+  background: #ffe600;
+  box-shadow: 0 0 25px #ffe600;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   #overlay h1 { font-size: 44px; }
@@ -540,7 +855,11 @@ body, html {
   .hud-top { padding: 0 15px; font-size: 16px; }
   .hud-score-val { font-size: 24px; }
   .climax-container { width: 85%; }
-  .missile-container { font-size: 16px; bottom: 85px; }
-  .armor-container { font-size: 16px; bottom: 85px; }
+  .hud-bottom-weapons { bottom: 85px; font-size: 15px; left: 15px; }
+  .missile-val, .flare-val, .spw-ammo { font-size: 18px; }
   #touch-controls { display: block; }
+  .hangar-carousel-controls { flex-direction: column; gap: 15px; }
+  .hangar-card { width: 90%; padding: 15px; }
+  .stat-bar-outer { width: 180px; }
+  .route-cards-grid { flex-direction: column; gap: 20px; }
 }

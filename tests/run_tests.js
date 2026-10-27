@@ -5,13 +5,15 @@
 import { runMathTests } from './test_math.js';
 import { runCombatTests } from './test_combat.js';
 import { runAudioTests } from './test_audio.js';
+import { runFleetTests } from './test_fleet.js';
+import { runCampaignTests } from './test_campaign.js';
 
 console.log("==================================================");
 console.log("🚀 STARTING AUTOMATED QA TEST SUITE...");
 console.log("==================================================");
 
 let passed = 0;
-let total = 3;
+let total = 5;
 
 try {
   runMathTests();
@@ -21,6 +23,12 @@ try {
   passed++;
 
   runAudioTests();
+  passed++;
+
+  runFleetTests();
+  passed++;
+
+  runCampaignTests();
   passed++;
 
   console.log("==================================================");

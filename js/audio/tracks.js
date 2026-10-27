@@ -18,10 +18,118 @@ export class MusicTracker {
   getTrackData(trackId) {
     if (trackId === 'AFTER_BURNER') {
       return this.buildAfterBurnerTrack();
-    } else if (trackId === 'CLIMAX_BOSS') {
+    } else if (trackId === 'MAXIMUM_POWER') {
+      return this.buildMaximumPowerTrack();
+    } else if (trackId === 'RED_OUT') {
+      return this.buildRedOutTrack();
+    } else if (trackId === 'GREAT_HARMONY') {
+      return this.buildGreatHarmonyTrack();
+    } else if (trackId === 'SUPER_SONIC' || trackId === 'CLIMAX_BOSS') {
       return this.buildBossBattleTrack();
     }
     return this.buildFinalTakeOffTrack();
+  }
+
+  buildMaximumPowerTrack() {
+    // Stage 2B Theme: High-Speed Polar Rock in A minor
+    const leadTrack = new Array(128).fill('REST');
+    leadTrack[0] = 'A4'; leadTrack[4] = 'C5'; leadTrack[8] = 'D5'; leadTrack[12] = 'E5';
+    leadTrack[16] = 'A5'; leadTrack[22] = 'G5'; leadTrack[26] = 'E5';
+    leadTrack[32] = 'D5'; leadTrack[36] = 'E5'; leadTrack[40] = 'G5'; leadTrack[44] = 'E5';
+    leadTrack[48] = 'D5'; leadTrack[52] = 'C5'; leadTrack[56] = 'B4'; leadTrack[60] = 'A4';
+    leadTrack[64] = 'C5'; leadTrack[68] = 'D5'; leadTrack[72] = 'E5'; leadTrack[76] = 'G5';
+    leadTrack[80] = 'A5'; leadTrack[86] = 'E5'; leadTrack[90] = 'G5';
+    leadTrack[96] = 'F5'; leadTrack[100] = 'E5'; leadTrack[104] = 'D5'; leadTrack[108] = 'C5';
+    leadTrack[112] = 'B4'; leadTrack[114] = 'C5'; leadTrack[116] = 'D5'; leadTrack[118] = 'E5';
+    leadTrack[120] = 'G5'; leadTrack[122] = 'A5'; leadTrack[124] = 'C6'; leadTrack[126] = 'A5';
+
+    const bassPatternAm = ['A2', 'REST', 'A2', 'A2', 'A2', 'REST', 'A2', 'A2', 'A2', 'REST', 'A2', 'A2', 'C3', 'REST', 'D3', 'REST'];
+    const bassPatternFG = ['F2', 'REST', 'F2', 'F2', 'F2', 'REST', 'F2', 'F2', 'G2', 'REST', 'G2', 'G2', 'G2', 'REST', 'G2', 'REST'];
+    const bassPatternEm = ['E2', 'REST', 'E2', 'E2', 'E2', 'REST', 'E2', 'E2', 'E2', 'REST', 'E2', 'E2', 'G2', 'REST', 'A2', 'REST'];
+    const bassPatternETurn = ['E2', 'REST', 'E2', 'E2', 'E2', 'REST', 'E2', 'E2', 'F2', 'F#2', 'G2', 'REST', 'G#2', 'REST', 'E2', 'REST'];
+
+    const bassTrack = [
+      ...bassPatternAm, ...bassPatternAm, ...bassPatternFG, ...bassPatternAm,
+      ...bassPatternEm, ...bassPatternAm, ...bassPatternFG, ...bassPatternETurn
+    ];
+
+    const chordMap = {
+      6: ['A4', 'C5', 'E5'], 14: ['A4', 'C5', 'E5'],
+      22: ['A4', 'C5', 'E5'], 30: ['A4', 'C5', 'E5'],
+      38: ['A4', 'C5', 'F5'], 46: ['B4', 'D5', 'G5'],
+      54: ['A4', 'C5', 'E5'], 62: ['A4', 'C5', 'E5'],
+      70: ['G4', 'B4', 'E5'], 78: ['A4', 'C5', 'E5'],
+      86: ['A4', 'C5', 'E5'], 94: ['A4', 'C5', 'E5'],
+      102: ['A4', 'C5', 'F5'], 110: ['B4', 'D5', 'G5'],
+      118: ['G#4', 'B4', 'E5'], 126: ['G#4', 'B4', 'D5']
+    };
+
+    return { leadTrack, bassTrack, chordMap };
+  }
+
+  buildRedOutTrack() {
+    // Stage 3A Theme: Fiery Volcanic Minor Pentatonic Rock
+    const leadTrack = new Array(128).fill('REST');
+    leadTrack[0] = 'D4'; leadTrack[3] = 'F4'; leadTrack[6] = 'G4'; leadTrack[9] = 'Ab4'; leadTrack[12] = 'A4';
+    leadTrack[16] = 'D5'; leadTrack[20] = 'C5'; leadTrack[24] = 'A4'; leadTrack[28] = 'G4';
+    leadTrack[32] = 'F4'; leadTrack[36] = 'G4'; leadTrack[40] = 'Ab4'; leadTrack[44] = 'A4';
+    leadTrack[48] = 'C5'; leadTrack[52] = 'D5'; leadTrack[56] = 'F5'; leadTrack[60] = 'D5';
+    leadTrack[64] = 'F5'; leadTrack[68] = 'G5'; leadTrack[72] = 'Ab5'; leadTrack[76] = 'A5';
+    leadTrack[80] = 'D6'; leadTrack[84] = 'C6'; leadTrack[88] = 'A5'; leadTrack[92] = 'F5';
+    leadTrack[96] = 'G5'; leadTrack[100] = 'F5'; leadTrack[104] = 'D5'; leadTrack[108] = 'C5';
+    leadTrack[112] = 'D5'; leadTrack[116] = 'F5'; leadTrack[120] = 'G5'; leadTrack[124] = 'D5';
+
+    const bassPatternHeavyD = ['D2', 'D2', 'REST', 'D2', 'D2', 'REST', 'D2', 'D2', 'F2', 'REST', 'F2', 'G2', 'Ab2', 'A2', 'REST', 'D2'];
+    const bassTrack = [
+      ...bassPatternHeavyD, ...bassPatternHeavyD, ...bassPatternHeavyD, ...bassPatternHeavyD,
+      ...bassPatternHeavyD, ...bassPatternHeavyD, ...bassPatternHeavyD, ...bassPatternHeavyD
+    ];
+
+    const chordMap = {
+      0: ['F4', 'A4', 'D5'], 8: ['G4', 'Bb4', 'D5'], 16: ['F4', 'A4', 'D5'], 24: ['A4', 'C#5', 'E5'],
+      32: ['F4', 'A4', 'D5'], 40: ['G4', 'Bb4', 'D5'], 48: ['F4', 'A4', 'D5'], 56: ['A4', 'C#5', 'E5'],
+      64: ['F4', 'A4', 'D5'], 72: ['G4', 'Bb4', 'D5'], 80: ['F4', 'A4', 'D5'], 88: ['A4', 'C#5', 'E5'],
+      96: ['F4', 'A4', 'D5'], 104: ['G4', 'Bb4', 'D5'], 112: ['F4', 'A4', 'D5'], 120: ['A4', 'C#5', 'E5']
+    };
+
+    return { leadTrack, bassTrack, chordMap };
+  }
+
+  buildGreatHarmonyTrack() {
+    // Stage 3B Theme: Cyber Metropolis Synthwave Fusion in F major / D minor
+    const leadTrack = new Array(128).fill('REST');
+    leadTrack[0] = 'F4'; leadTrack[4] = 'A4'; leadTrack[8] = 'C5'; leadTrack[12] = 'E5';
+    leadTrack[16] = 'D5'; leadTrack[22] = 'C5'; leadTrack[26] = 'A4';
+    leadTrack[32] = 'Bb4'; leadTrack[36] = 'C5'; leadTrack[40] = 'D5'; leadTrack[44] = 'F5';
+    leadTrack[48] = 'E5'; leadTrack[52] = 'C5'; leadTrack[56] = 'A4'; leadTrack[60] = 'F4';
+    leadTrack[64] = 'A4'; leadTrack[68] = 'C5'; leadTrack[72] = 'E5'; leadTrack[76] = 'G5';
+    leadTrack[80] = 'F5'; leadTrack[86] = 'D5'; leadTrack[90] = 'F5';
+    leadTrack[96] = 'G5'; leadTrack[100] = 'F5'; leadTrack[104] = 'E5'; leadTrack[108] = 'D5';
+    leadTrack[112] = 'C5'; leadTrack[114] = 'D5'; leadTrack[116] = 'E5'; leadTrack[118] = 'F5';
+    leadTrack[120] = 'G5'; leadTrack[122] = 'A5'; leadTrack[124] = 'C6'; leadTrack[126] = 'D6';
+
+    const bassPatternF = ['F2', 'REST', 'F2', 'F2', 'F2', 'REST', 'F2', 'F2', 'F2', 'REST', 'F2', 'F2', 'A2', 'REST', 'C3', 'REST'];
+    const bassPatternBb = ['Bb2', 'REST', 'Bb2', 'Bb2', 'Bb2', 'REST', 'Bb2', 'Bb2', 'C3', 'REST', 'C3', 'C3', 'C3', 'REST', 'C3', 'REST'];
+    const bassPatternDm = ['D2', 'REST', 'D2', 'D2', 'D2', 'REST', 'D2', 'D2', 'D2', 'REST', 'D2', 'D2', 'F2', 'REST', 'G2', 'REST'];
+    const bassPatternC = ['C2', 'REST', 'C2', 'C2', 'C2', 'REST', 'C2', 'C2', 'C2', 'REST', 'C2', 'C2', 'E2', 'REST', 'G2', 'REST'];
+
+    const bassTrack = [
+      ...bassPatternF, ...bassPatternBb, ...bassPatternDm, ...bassPatternC,
+      ...bassPatternF, ...bassPatternBb, ...bassPatternDm, ...bassPatternC
+    ];
+
+    const chordMap = {
+      6: ['A4', 'C5', 'F5'], 14: ['A4', 'C5', 'F5'],
+      22: ['F4', 'Bb4', 'D5'], 30: ['G4', 'C5', 'E5'],
+      38: ['F4', 'A4', 'D5'], 46: ['F4', 'A4', 'D5'],
+      54: ['G4', 'C5', 'E5'], 62: ['G4', 'C5', 'E5'],
+      70: ['A4', 'C5', 'F5'], 78: ['A4', 'C5', 'F5'],
+      86: ['F4', 'Bb4', 'D5'], 94: ['G4', 'C5', 'E5'],
+      102: ['F4', 'A4', 'D5'], 110: ['F4', 'A4', 'D5'],
+      118: ['G4', 'C5', 'E5'], 126: ['G4', 'C5', 'E5']
+    };
+
+    return { leadTrack, bassTrack, chordMap };
   }
 
   buildFinalTakeOffTrack() {

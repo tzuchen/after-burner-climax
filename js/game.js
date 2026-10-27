@@ -10,6 +10,7 @@ import { sound } from './audio/synth.js';
 import { music } from './audio/tracks.js';
 import { radio } from './audio/radio.js';
 import { PlayerF14 } from './models/player_f14.js';
+import { HangarShowcase } from './models/hangar.js';
 import { BossXB0 } from './models/enemy_boss.js';
 import { TankerKC10 } from './models/tanker_kc10.js';
 import { BiomeController } from './environment/biomes.js';
@@ -27,7 +28,7 @@ class GameApp {
     this.scene.fog = new THREE.FogExp2(0xff6622, 0.00065);
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 9000);
-    this.camera.position.set(0, 15, 45);
+    this.camera.position.set(0, 8, 38);
 
     // 2. WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -50,17 +51,20 @@ class GameApp {
     this.particles = new ParticleEngine(this.scene, this.camera);
     this.biomes = new BiomeController(this.scene);
     this.player = new PlayerF14(this.scene);
+    this.hangar = new HangarShowcase(this.scene);
     this.boss = new BossXB0(this.scene);
     this.tanker = new TankerKC10(this.scene);
     this.enemyAI = new EnemyAIManager(this.scene);
     this.combat = new CombatSystem(this.scene, this.camera, this.particles);
 
-    // 5. Connect Input Callbacks
+    // 5. Connect Input Callbacks & UI Listeners
     this.bindInputCallbacks();
+    this.initUIListeners();
 
-    // 6. Refueling Sequence State
+    // 6. Branching & Refueling State
     this.isRefueling = false;
     this.refuelTimer = 0;
+    this.routeCountdown = 5.0;
 
     // 7. Timekeeping
     this.lastTime = performance.now();
@@ -68,21 +72,48 @@ class GameApp {
     // 8. Event Listeners
     window.addEventListener('resize', () => this.onResize());
 
-    // Apply Stage 1 Initial Environment
+    // Apply Stage 1 Initial Environment & Show Hangar Turntable
     this.biomes.applyStageTheme(state.getCurrentStage());
+    this.hangar.show(this.player);
   }
 
   bindInputCallbacks() {
-    this.input.callbacks.onStartGame = () => this.startGame();
+    this.input.callbacks.onStartGame = () => {
+      if (state.inHangar) this.launchSortie();
+    };
+
+    this.input.callbacks.onPrevAircraft = () => {
+      if (state.inHangar) this.hangar.prevAircraft();
+    };
+
+    this.input.callbacks.onNextAircraft = () => {
+      if (state.inHangar) this.hangar.nextAircraft();
+    };
+
+    this.input.callbacks.onSelectRoute = (idx) => {
+      if (state.isSelectingRoute) this.selectRoute(idx);
+    };
+
+    this.input.callbacks.onDeployFlares = () => {
+      if (state.started && !this.isRefueling && !state.inHangar) {
+        this.combat.deployFlares(this.player.group);
+      }
+    };
+
+    this.input.callbacks.onFireSpecialWeapon = () => {
+      if (state.started && !this.isRefueling && !state.inHangar) {
+        this.combat.fireSpecialWeapon(this.player.group, this.enemyAI.enemies, this.boss);
+      }
+    };
 
     this.input.callbacks.onFireVulcan = () => {
-      if (state.started && !this.isRefueling) {
+      if (state.started && !this.isRefueling && !state.inHangar) {
         this.combat.firePlayerVulcan(this.player.group);
       }
     };
 
     this.input.callbacks.onFireMissile = () => {
-      if (state.started && !this.isRefueling) {
+      if (state.started && !this.isRefueling && !state.inHangar) {
         const lockedTargets = [];
         this.enemyAI.enemies.forEach(en => { if (en.isLocked && en.alive) lockedTargets.push(en); });
         if (this.boss && this.boss.active && this.boss.alive) {
@@ -93,37 +124,142 @@ class GameApp {
     };
 
     this.input.callbacks.onBarrelRoll = (dir) => {
-      this.triggerBarrelRoll(dir);
-    };
-
-    this.input.callbacks.onToggleClimax = () => {
-      this.triggerClimaxMode();
-    };
-
-    this.input.callbacks.onToggleView = () => {
-      state.isCockpitView = !state.isCockpitView;
-      const cockpitOverlay = document.getElementById('cockpit-overlay');
-      if (cockpitOverlay) cockpitOverlay.style.display = state.isCockpitView ? 'block' : 'none';
-      if (this.player.parts.cockpitInterior) {
-        this.player.parts.cockpitInterior.visible = state.isCockpitView;
+      if (state.started && !state.inHangar) {
+        this.triggerBarrelRoll(dir);
       }
     };
 
-    // Overlay Start Click
+    this.input.callbacks.onToggleClimax = () => {
+      if (state.started && !state.inHangar) {
+        this.triggerClimaxMode();
+      }
+    };
+
+    this.input.callbacks.onToggleView = () => {
+      if (!state.started || state.inHangar) return;
+      state.isCockpitView = !state.isCockpitView;
+      const cockpitOverlay = document.getElementById('cockpit-overlay');
+      if (cockpitOverlay) cockpitOverlay.style.display = state.isCockpitView ? 'block' : 'none';
+      if (this.player.parts && this.player.parts.cockpitInterior) {
+        this.player.parts.cockpitInterior.visible = state.isCockpitView;
+      }
+    };
+  }
+
+  initUIListeners() {
     const overlay = document.getElementById('overlay');
+    const hangarUI = document.getElementById('hangar-ui');
+    const btnSortie = document.getElementById('btn-sortie');
+    const btnPrev = document.getElementById('btn-hangar-prev');
+    const btnNext = document.getElementById('btn-hangar-next');
+    const btnRoute0 = document.getElementById('btn-route-0');
+    const btnRoute1 = document.getElementById('btn-route-1');
+
     if (overlay) {
-      overlay.addEventListener('click', () => this.startGame());
+      overlay.addEventListener('click', () => {
+        overlay.style.display = 'none';
+        if (hangarUI) hangarUI.style.display = 'flex';
+        sound.init();
+      });
+    }
+
+    if (btnPrev) {
+      btnPrev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hangar.prevAircraft();
+      });
+    }
+
+    if (btnNext) {
+      btnNext.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hangar.nextAircraft();
+      });
+    }
+
+    if (btnSortie) {
+      btnSortie.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.launchSortie();
+      });
+    }
+
+    if (btnRoute0) {
+      btnRoute0.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectRoute(0);
+      });
+    }
+
+    if (btnRoute1) {
+      btnRoute1.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectRoute(1);
+      });
     }
   }
 
-  startGame() {
+  launchSortie() {
     if (state.started) return;
-    document.getElementById('overlay').style.display = 'none';
-    sound.init();
-    state.started = true;
+    const hangarUI = document.getElementById('hangar-ui');
+    if (hangarUI) hangarUI.style.display = 'none';
 
+    // Swap active player model mesh if needed
+    const selectedObj = this.hangar.fleetMeshes.get(state.selectedAircraftId);
+    if (selectedObj && state.selectedAircraftId !== 'F14D') {
+      this.player.group.visible = false;
+      this.scene.add(selectedObj.group);
+      this.player = selectedObj;
+      this.player.group.visible = true;
+    }
+
+    this.hangar.hide();
+    this.player.group.position.set(0, 15, 0);
+
+    state.inHangar = false;
+    state.started = true;
+    sound.init();
+    sound.playSonicBoom();
+
+    this.camera.position.set(0, 15, 45);
     music.playTrack(state.getCurrentStage().bgmTrack);
     radio.calloutMissionStart();
+  }
+
+  openRouteBranchingModal(stage) {
+    state.isSelectingRoute = true;
+    this.routeCountdown = 5.0;
+
+    const modal = document.getElementById('route-modal');
+    const r0Name = document.getElementById('route-0-name');
+    const r0Desc = document.getElementById('route-0-desc');
+    const r1Name = document.getElementById('route-1-name');
+    const r1Desc = document.getElementById('route-1-desc');
+
+    if (stage.routes[0]) {
+      const next0 = CONFIG.STAGES[stage.routes[0].nextStageIndex];
+      if (r0Name) r0Name.innerText = next0.name;
+      if (r0Desc) r0Desc.innerText = next0.briefing;
+    }
+
+    if (stage.routes[1]) {
+      const next1 = CONFIG.STAGES[stage.routes[1].nextStageIndex];
+      if (r1Name) r1Name.innerText = next1.name;
+      if (r1Desc) r1Desc.innerText = next1.briefing;
+    }
+
+    if (modal) modal.style.display = 'flex';
+    radio.speak("Tactical branching point ahead! Confirm flight path!", "AWACS OVERSIGHT", true);
+  }
+
+  selectRoute(idx) {
+    state.isSelectingRoute = false;
+    const modal = document.getElementById('route-modal');
+    if (modal) modal.style.display = 'none';
+
+    state.chooseRoute(idx);
+    this.startRefuelingIntermission();
+    radio.speak(`Route confirmed! Heading to ${state.getCurrentStage().name}!`, "AWACS OVERSIGHT", true);
   }
 
   triggerBarrelRoll(dir = 1) {
@@ -175,6 +311,27 @@ class GameApp {
   update(now) {
     const dtReal = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
+
+    // 0. 3D Hangar Turntable Inspection Mode
+    if (state.inHangar) {
+      this.hangar.update(dtReal);
+      this.camera.position.set(0, 7 + Math.sin(now * 0.0015) * 1.5, 38);
+      this.camera.lookAt(0, 1.5, 0);
+      return;
+    }
+
+    // 0.1 Tactical Route Branching Decision Pause
+    if (state.isSelectingRoute) {
+      this.routeCountdown -= dtReal;
+      const timerEl = document.getElementById('route-timer');
+      if (timerEl) {
+        timerEl.innerText = `AUTO-SELECTING ROUTE A IN ${Math.max(1, Math.ceil(this.routeCountdown))}s...`;
+      }
+      if (this.routeCountdown <= 0) {
+        this.selectRoute(0);
+      }
+      return;
+    }
 
     if (!state.started) return;
 
@@ -307,7 +464,14 @@ class GameApp {
       // 9. Stage Progression Check
       const stage = state.getCurrentStage();
       if (!stage.bossStage && state.stageKills >= stage.targetKills) {
-        this.startRefuelingIntermission();
+        if (stage.routes && stage.routes.length > 1) {
+          this.openRouteBranchingModal(stage);
+        } else if (stage.routes && stage.routes.length === 1) {
+          state.nextStage(0);
+          this.startRefuelingIntermission();
+        } else {
+          this.startRefuelingIntermission();
+        }
       }
     } else {
       // In Refueling Intermission
@@ -320,7 +484,6 @@ class GameApp {
       if (this.refuelTimer <= 0) {
         this.isRefueling = false;
         this.tanker.endSequence();
-        state.nextStage();
         this.biomes.applyStageTheme(state.getCurrentStage());
         music.playTrack(state.getCurrentStage().bgmTrack);
         radio.speak(`Entering ${state.getCurrentStage().name}! Stay sharp!`, "AWACS OVERSIGHT", true);

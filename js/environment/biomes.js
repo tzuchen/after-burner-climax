@@ -1,11 +1,13 @@
 /* ============================================================
-   AFTER BURNER CLIMAX - BIOME & ATMOSPHERE CONTROLLER
-   Multi-Stage Transitions: Ocean Sunset -> Canyon -> Stratosphere
+   AFTER BURNER CLIMAX - EXPANDED BIOME & ATMOSPHERE CONTROLLER
+   Integrated Ocean, Canyons, 3D Terrains, Clouds, Weather, Speedlines
    ============================================================ */
 
 import { CanyonEnvironment } from './canyon.js';
 import { CloudSystem } from './volumetric_clouds.js';
 import { SpeedLineSystem } from './speedlines.js';
+import { WeatherSystem } from './weather.js';
+import { Advanced3DTerrainEngine } from './terrain_3d.js';
 
 export class BiomeController {
   constructor(scene) {
@@ -18,9 +20,9 @@ export class BiomeController {
     octx.fillStyle = '#06162d';
     octx.fillRect(0, 0, 128, 128);
     octx.fillStyle = '#00f0ff';
-    octx.fillRect(0, 60, 128, 8); // Cyan wave grid line
+    octx.fillRect(0, 60, 128, 8);
     octx.fillStyle = '#ff7700';
-    octx.fillRect(60, 0, 8, 128); // Sunset orange crossline
+    octx.fillRect(60, 0, 8, 128);
 
     this.oceanTex = new THREE.CanvasTexture(oceanCanvas);
     this.oceanTex.wrapS = THREE.RepeatWrapping;
@@ -34,7 +36,7 @@ export class BiomeController {
     this.oceanMesh.position.y = -60;
     this.scene.add(this.oceanMesh);
 
-    // 2. Horizon Celestial Sun Disk
+    // 2. Horizon Celestial Sun / Moon Disk
     const sunGeo = new THREE.CircleGeometry(340, 32);
     this.sunMat = new THREE.MeshBasicMaterial({ color: 0xffe644, fog: false });
     this.sunMesh = new THREE.Mesh(sunGeo, this.sunMat);
@@ -45,6 +47,8 @@ export class BiomeController {
     this.clouds = new CloudSystem(scene);
     this.canyon = new CanyonEnvironment(scene);
     this.speedLines = new SpeedLineSystem(scene);
+    this.weather = new WeatherSystem(scene);
+    this.terrain3D = new Advanced3DTerrainEngine(scene);
   }
 
   applyStageTheme(stageConfig) {
@@ -52,14 +56,20 @@ export class BiomeController {
     this.scene.fog.color.setHex(stageConfig.fogColor);
     this.scene.fog.density = stageConfig.fogDensity;
 
-    // Sun Disk update
+    // Sun / Moon Disk update
     this.sunMat.color.setHex(stageConfig.sunColor);
 
-    // Ocean / Ground color
+    // Ground Color
     this.oceanMat.color.setHex(stageConfig.waterColor);
 
     // Canyon activation
-    this.canyon.setActive(stageConfig.hasCanyon);
+    this.canyon.setActive(stageConfig.hasCanyon && stageConfig.biome === 'DESERT_CANYON');
+
+    // 3D Procedural Terrain activation
+    this.terrain3D.setBiome(stageConfig.biome);
+
+    // Weather activation
+    this.weather.setWeather(stageConfig.biome);
 
     // Cloud tinting
     this.clouds.setBiomeTheme(stageConfig.biome);
@@ -72,6 +82,8 @@ export class BiomeController {
     // Update Subsystems
     this.clouds.update(dt, forwardSpeed);
     this.canyon.update(dt, forwardSpeed);
+    this.terrain3D.update(dt, forwardSpeed);
+    this.weather.update(dt, forwardSpeed);
     this.speedLines.update(dt, forwardSpeed, isAfterburner, isClimax, playerPos);
   }
 }

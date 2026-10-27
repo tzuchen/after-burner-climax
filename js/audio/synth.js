@@ -381,6 +381,70 @@ export class RetroSoundEngine {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.45);
   }
+
+  /* --- EXPANDED SPECIAL WEAPONS & COUNTERMEASURES --- */
+  playGatlingBurst() {
+    if (!this.ctx) return;
+    // A-10 30mm GAU-8/A Avenger BRRRTT Sound (65Hz base sawtooth buzz)
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(65, this.ctx.currentTime); // 3900 rounds per minute = 65 Hz!
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(650, this.ctx.currentTime);
+    filter.Q.value = 4.0;
+
+    gain.gain.setValueAtTime(0.48, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.28);
+  }
+
+  playFlareLaunch() {
+    if (!this.ctx) return;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this.noiseBuffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1800, this.ctx.currentTime);
+    filter.Q.value = 3.0;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    noise.start();
+    noise.stop(this.ctx.currentTime + 0.22);
+  }
+
+  playSonicBoom() {
+    if (!this.ctx) return;
+    // Sonic Boom Double-Clap
+    [0, 0.08].forEach(dt => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(110, this.ctx.currentTime + dt);
+      osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + dt + 0.25);
+      gain.gain.setValueAtTime(0.5, this.ctx.currentTime + dt);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dt + 0.25);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(this.ctx.currentTime + dt);
+      osc.stop(this.ctx.currentTime + dt + 0.25);
+    });
+  }
 }
 
 export const sound = new RetroSoundEngine();

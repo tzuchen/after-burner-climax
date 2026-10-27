@@ -17,7 +17,12 @@ export class InputManager {
       onBarrelRoll: null,
       onToggleClimax: null,
       onToggleView: null,
-      onStartGame: null
+      onStartGame: null,
+      onDeployFlares: null,
+      onFireSpecialWeapon: null,
+      onPrevAircraft: null,
+      onNextAircraft: null,
+      onSelectRoute: null
     };
 
     this.initKeyboard();
@@ -31,9 +36,43 @@ export class InputManager {
       const k = e.key.toLowerCase();
       this.keys[k] = true;
 
+      // Hangar selection shortcuts
+      if (state.inHangar) {
+        if (k === 'arrowleft' || k === 'a') {
+          if (this.callbacks.onPrevAircraft) this.callbacks.onPrevAircraft();
+          return;
+        }
+        if (k === 'arrowright' || k === 'd') {
+          if (this.callbacks.onNextAircraft) this.callbacks.onNextAircraft();
+          return;
+        }
+        if (e.code === 'Space' || e.code === 'Enter') {
+          if (this.callbacks.onStartGame) this.callbacks.onStartGame();
+          return;
+        }
+      }
+
+      // Route branching selection shortcuts
+      if (state.isSelectingRoute) {
+        if (k === '1') {
+          if (this.callbacks.onSelectRoute) this.callbacks.onSelectRoute(0);
+          return;
+        }
+        if (k === '2') {
+          if (this.callbacks.onSelectRoute) this.callbacks.onSelectRoute(1);
+          return;
+        }
+      }
+
       if (e.code === 'Space') {
         if (this.callbacks.onFireVulcan) this.callbacks.onFireVulcan();
         if (this.callbacks.onFireMissile) this.callbacks.onFireMissile();
+      }
+      if (k === 'x') {
+        if (this.callbacks.onDeployFlares) this.callbacks.onDeployFlares();
+      }
+      if (k === 'f') {
+        if (this.callbacks.onFireSpecialWeapon) this.callbacks.onFireSpecialWeapon();
       }
       if (k === 'q') {
         if (this.callbacks.onBarrelRoll) this.callbacks.onBarrelRoll(-1);
@@ -132,6 +171,22 @@ export class InputManager {
       });
     }
 
+    const btnSpw = document.getElementById('btn-touch-spw');
+    if (btnSpw) {
+      btnSpw.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (this.callbacks.onFireSpecialWeapon) this.callbacks.onFireSpecialWeapon();
+      });
+    }
+
+    const btnFlare = document.getElementById('btn-touch-flare');
+    if (btnFlare) {
+      btnFlare.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (this.callbacks.onDeployFlares) this.callbacks.onDeployFlares();
+      });
+    }
+
     const btnRoll = document.getElementById('btn-touch-roll');
     if (btnRoll) {
       btnRoll.addEventListener('touchstart', (e) => {
@@ -200,9 +255,17 @@ export class InputManager {
           // Button A / Cross: Fire
           if (this.callbacks.onFireVulcan) this.callbacks.onFireVulcan();
         }
+        if (gp.buttons[1] && gp.buttons[1].pressed) {
+          // Button B / Circle: Deploy Flares
+          if (this.callbacks.onDeployFlares) this.callbacks.onDeployFlares();
+        }
         if (gp.buttons[2] && gp.buttons[2].pressed) {
           // Button X / Square: Climax
           if (this.callbacks.onToggleClimax) this.callbacks.onToggleClimax();
+        }
+        if (gp.buttons[3] && gp.buttons[3].pressed) {
+          // Button Y / Triangle: Special Weapon
+          if (this.callbacks.onFireSpecialWeapon) this.callbacks.onFireSpecialWeapon();
         }
         if (gp.buttons[4] && gp.buttons[4].pressed) {
           // L1: Roll Left
