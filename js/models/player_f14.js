@@ -84,6 +84,11 @@ export class PlayerF14 {
     this.group.add(this.proceduralBody);
     this.gltfMesh = null;
 
+    // Dynamic Exhaust Point Light (Illuminates rear airframe & twin stabilizers in firelight)
+    this.exhaustLight = new THREE.PointLight(0xff5500, 2.8, 48);
+    this.exhaustLight.position.set(0, -0.2, 10.5);
+    this.group.add(this.exhaustLight);
+
     this.build();
     this.initVortexTrails();
 
@@ -415,20 +420,31 @@ export class PlayerF14 {
       this.parts.rightStab.rotation.x = -targetPitch * 1.8;
     }
 
-    // 3. Multistage Afterburner Exhaust Flames & Shock Diamonds
-    const flameScale = (state.isAfterburner ? 2.5 : 1.1) + Math.sin(now * 0.05) * 0.25;
-    const coreScale = (state.isAfterburner ? 1.9 : 0.9) + Math.sin(now * 0.08) * 0.15;
+    // 3. Multistage Afterburner Exhaust Flames, Firelight & Shock Diamonds
+    if (this.exhaustLight) {
+      const isAB = state.isAfterburner || state.isClimax;
+      const baseIntensity = state.isClimax ? 5.5 : (state.isAfterburner ? 4.2 : 1.5);
+      const flicker = 1.0 + Math.sin(now * 0.15) * 0.18 + (Math.random() - 0.5) * 0.15;
+      this.exhaustLight.intensity = baseIntensity * flicker;
+      this.exhaustLight.color.setHex(state.isClimax ? 0x00f0ff : (state.isAfterburner ? 0xff4400 : 0xff7722));
+    }
+
+    const flameScale = (state.isClimax ? 3.2 : (state.isAfterburner ? 2.8 : 1.2)) + Math.sin(now * 0.08) * 0.25;
+    const coreScale = (state.isClimax ? 2.5 : (state.isAfterburner ? 2.2 : 0.95)) + Math.sin(now * 0.12) * 0.15;
 
     if (this.parts.leftFlame) {
       this.parts.leftFlame.scale.set(1, flameScale, 1);
       this.parts.rightFlame.scale.set(1, flameScale, 1);
-      this.parts.leftFlame.material.color.setHex(state.isAfterburner ? 0xff5500 : 0x00f0ff);
-      this.parts.rightFlame.material.color.setHex(state.isAfterburner ? 0xff5500 : 0x00f0ff);
+      const outerColor = state.isClimax ? 0x2288ff : (state.isAfterburner ? 0xff4400 : 0x00d0ff);
+      const coreColor = state.isClimax ? 0xffffff : (state.isAfterburner ? 0xffeeaa : 0xffffff);
+
+      this.parts.leftFlame.material.color.setHex(outerColor);
+      this.parts.rightFlame.material.color.setHex(outerColor);
 
       this.parts.leftCoreFlame.scale.set(1, coreScale, 1);
       this.parts.rightCoreFlame.scale.set(1, coreScale, 1);
-      this.parts.leftCoreFlame.material.color.setHex(state.isAfterburner ? 0xffeeaa : 0xffffff);
-      this.parts.rightCoreFlame.material.color.setHex(state.isAfterburner ? 0xffeeaa : 0xffffff);
+      this.parts.leftCoreFlame.material.color.setHex(coreColor);
+      this.parts.rightCoreFlame.material.color.setHex(coreColor);
 
       // Pulse Shock Diamonds when supersonic
       const diamondScale = state.isAfterburner ? (1.0 + Math.sin(now * 0.1) * 0.3) : 0.4;

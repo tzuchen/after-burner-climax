@@ -173,9 +173,15 @@ export class GLTFModelManager {
       group.add(visualMesh);
     }
 
-    // Attach High-Energy Afterburner Plumes & Shock Diamonds
+    // Attach High-Energy Afterburner Plumes, Firelight & Shock Diamonds
     const flames = [];
     const shockDiamonds = [];
+
+    // Dynamic Exhaust Point Light (illuminates rear airframe & tail in firelight)
+    const exhaustLight = new THREE.PointLight(0xff5500, 2.8, 48);
+    const avgOz = cfg.exhaustOffsets.length > 0 ? cfg.exhaustOffsets[0][2] : 8.5;
+    exhaustLight.position.set(0, -0.2, avgOz + 2.0);
+    group.add(exhaustLight);
 
     const flameMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.88 });
     const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
@@ -207,13 +213,22 @@ export class GLTFModelManager {
     });
 
     const updateVFX = (dt, state, targetPitch, now) => {
-      const flameScale = (state.isAfterburner ? 2.5 : 1.1) + Math.sin(now * 0.05) * 0.22;
-      const flameColor = state.isAfterburner ? 0xff5500 : 0x00f0ff;
+      if (exhaustLight) {
+        const isAB = state.isAfterburner || state.isClimax;
+        const baseIntensity = state.isClimax ? 5.5 : (state.isAfterburner ? 4.2 : 1.5);
+        const flicker = 1.0 + Math.sin(now * 0.15) * 0.18 + (Math.random() - 0.5) * 0.15;
+        exhaustLight.intensity = baseIntensity * flicker;
+        exhaustLight.color.setHex(state.isClimax ? 0x00f0ff : (state.isAfterburner ? 0xff4400 : 0xff7722));
+      }
+
+      const flameScale = (state.isClimax ? 3.2 : (state.isAfterburner ? 2.8 : 1.2)) + Math.sin(now * 0.08) * 0.25;
+      const flameColor = state.isClimax ? 0x2288ff : (state.isAfterburner ? 0xff4400 : 0x00d0ff);
+      const coreColor = state.isClimax ? 0xffffff : (state.isAfterburner ? 0xffeeaa : 0xffffff);
 
       flames.forEach((f, idx) => {
         f.scale.set(1, flameScale, 1);
-        if (idx % 2 === 0) {
-          f.material.color.setHex(flameColor);
+        if (f.material && f.material.color) {
+          f.material.color.setHex(idx % 2 === 0 ? flameColor : coreColor);
         }
       });
 

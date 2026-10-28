@@ -67,8 +67,10 @@ class GameApp {
     this.refuelTimer = 0;
     this.routeCountdown = 5.0;
 
-    // 7. Timekeeping
+    // 7. Timekeeping & Arcade Hit-Stop
     this.lastTime = performance.now();
+    this.hitStopTimer = 0;
+    if (typeof window !== 'undefined') window.gameApp = this;
 
     // 8. Event Listeners
     window.addEventListener('resize', () => this.onResize());
@@ -390,9 +392,19 @@ class GameApp {
     requestAnimationFrame(loop);
   }
 
+  triggerHitStop(duration = 0.038) {
+    this.hitStopTimer = duration;
+  }
+
   update(now) {
     const dtReal = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
+
+    // 0. Micro Hit-Stop Frame Freeze (Arcade Impact Crunch)
+    if (this.hitStopTimer > 0) {
+      this.hitStopTimer -= dtReal;
+      return;
+    }
 
     // 0. Title Screen Mode: gentle camera bobbing & turntable rotation behind overlay
     if (state.inTitle) {
@@ -517,7 +529,21 @@ class GameApp {
     this.player.update(dt, state, targetPitch, now);
 
     // 6. Update Environment & Biomes
-    this.biomes.update(dt, forwardSpeed, state.isAfterburner, state.isClimax, this.player.group.position);
+    this.biomes.update(
+      dt,
+      forwardSpeed,
+      state.isAfterburner,
+      state.isClimax,
+      this.player.group.position,
+      (archPos) => {
+        state.addScore(5000);
+        sound.playSonicBoom();
+        radio.speak("Incredible flying! Thread the needle!", "AWACS OVERSIGHT", true);
+        if (this.combat) {
+          this.combat.spawnScorePopup(archPos, 5000, 'THREAD THE NEEDLE!');
+        }
+      }
+    );
 
     // 7. Update Enemy AI & Waves
     if (!this.isRefueling) {

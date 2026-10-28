@@ -37,6 +37,30 @@ export class ParticleEngine {
     const wreckageCount = isBoss ? 12 : 6;
     const sparkCount = isBoss ? 60 : 35;
 
+    // Trigger Arcade Micro Hit-Stop Frame Freeze on Impact
+    if (typeof window !== 'undefined' && window.gameApp) {
+      window.gameApp.triggerHitStop(isBoss ? 0.055 : 0.035);
+    }
+
+    // 0. Blinding White-Hot Detonation Flash Sphere
+    const flashMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95
+    });
+    const flashMesh = new THREE.Mesh(this.coreFireGeo, flashMat);
+    flashMesh.position.copy(pos);
+    flashMesh.scale.setScalar(scaleFactor * 2.8);
+    this.scene.add(flashMesh);
+    this.particles.push({
+      mesh: flashMesh,
+      type: 'FLASH',
+      growth: 60,
+      vel: new THREE.Vector3(0, 0, 0),
+      life: 0.08,
+      maxLife: 0.08
+    });
+
     // 1. Concentric Shockwave Blast Rings
     [
       { color: 0xffee44, growth: isBoss ? 130 : 95, life: 0.42 },
@@ -284,6 +308,10 @@ export class ParticleEngine {
         }
 
         p.mesh.material.opacity = progress > 0.8 ? Math.max(0, 1.0 - (progress - 0.8) / 0.2) : 1.0;
+
+      } else if (p.type === 'FLASH') {
+        p.mesh.scale.multiplyScalar(1.0 + p.growth * dtReal * 0.2);
+        p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
 
       } else if (p.type === 'RING') {
         // Expanding Supersonic Shockwave Ring
