@@ -136,6 +136,9 @@ class GameApp {
         const lockedTargets = [];
         this.enemyAI.enemies.forEach(en => { if (en.isLocked && en.alive) lockedTargets.push(en); });
         if (this.boss && this.boss.active && this.boss.alive) {
+          if (this.boss.coreTarget && this.boss.coreTarget.isLocked && this.boss.coreTarget.alive) {
+            lockedTargets.push(this.boss.coreTarget);
+          }
           this.boss.turrets.forEach(t => { if (t.isLocked && t.alive) lockedTargets.push(t); });
         }
         lockedTargets.forEach(t => this.combat.firePlayerMissile(t, this.player.group));
@@ -373,6 +376,8 @@ class GameApp {
   startRefuelingIntermission() {
     this.isRefueling = true;
     this.refuelTimer = 5.0;
+    this.enemyAI.clear();
+    this.combat.clear();
     this.tanker.startSequence(this.player.group);
     radio.calloutStageClear();
   }
@@ -564,9 +569,11 @@ class GameApp {
         (pos, target) => this.combat.fireEnemyTracer(pos, target)
       );
 
-      // 8. Boss Battle Handling (Stage 3)
+      // 8. Boss Battle Handling (Stage 4 / Final Mission)
       if (state.getCurrentStage().bossStage) {
         if (!this.boss.active) {
+          this.enemyAI.clear();
+          this.combat.clear();
           this.boss.activate();
           radio.calloutBossWarning();
         }
@@ -580,8 +587,26 @@ class GameApp {
 
         if (!this.boss.alive && !state.victory) {
           state.victory = true;
-          this.particles.createExplosion(this.boss.group.position, 60, true);
-          this.boss.active = false;
+          this.combat.clear();
+
+          // Cascading Boss Destruction Sequence
+          const bossPos = this.boss.group.position.clone();
+          for (let i = 0; i < 7; i++) {
+            setTimeout(() => {
+              const ox = (Math.random() - 0.5) * 120;
+              const oy = (Math.random() - 0.5) * 24;
+              const oz = (Math.random() - 0.5) * 35;
+              this.particles.createExplosion(bossPos.clone().add(new THREE.Vector3(ox, oy, oz)), 42 + Math.random() * 24, true);
+              sound.playExplosion();
+            }, i * 180);
+          }
+
+          setTimeout(() => {
+            this.particles.createExplosion(bossPos, 85, true);
+            this.boss.deactivate();
+            this.triggerHitStop(0.12);
+          }, 1450);
+
           radio.speak("MISSION ACCOMPLISHED! Enemy Superfortress destroyed! Outstanding work, Tomcat 1!", "AWACS OVERSIGHT", true);
         }
       }

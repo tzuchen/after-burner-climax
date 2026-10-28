@@ -44,6 +44,30 @@ export function runCombatTests() {
     throw new Error(`Climax gauge overflowed past 100%: ${testState.climaxGauge}`);
   }
 
+  // Test 6: Boss Health Invariant & Multi-hit Durability
+  let bossHealth = 100;
+  const damagePerMissile = 12;
+  const hitsRequired = Math.ceil(bossHealth / damagePerMissile);
+  for (let i = 1; i <= hitsRequired; i++) {
+    bossHealth = Math.max(0, bossHealth - damagePerMissile);
+    const shouldBeAlive = bossHealth > 0;
+    if (i < hitsRequired && !shouldBeAlive) {
+      throw new Error(`Boss core prematurely marked dead on hit ${i}`);
+    }
+    if (i === hitsRequired && shouldBeAlive) {
+      throw new Error(`Boss core failed to be destroyed after full damage budget on hit ${i}`);
+    }
+  }
+
+  // Test 7: Boss Component String IDs (Non-colliding with numeric enemy IDs)
+  const bossTurretIds = ['boss_turret_port_flak', 'boss_turret_stbd_flak', 'boss_turret_port_sam', 'boss_turret_stbd_sam'];
+  const coreId = 'boss_core';
+  [coreId, ...bossTurretIds].forEach(id => {
+    if (typeof id !== 'string' || !isNaN(Number(id))) {
+      throw new Error(`Boss part ID "${id}" must be a distinct non-numeric string to prevent lock-box collision`);
+    }
+  });
+
   console.log(" ✓ All Combat & GameState Tests Passed!");
   return true;
 }

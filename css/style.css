@@ -357,37 +357,128 @@ body, html {
   animation: pulseGlow 0.4s infinite alternate;
 }
 
-/* Targeting Reticle Lock Boxes */
+/* Targeting Reticle Lock Boxes (Arcade Corner Brackets) */
 .lock-box {
   position: absolute;
-  width: 48px;
-  height: 48px;
-  border: 2px solid #ff2244;
-  box-shadow: 0 0 12px #ff0044;
+  width: 52px;
+  height: 52px;
+  background: transparent !important;
   pointer-events: none;
   z-index: 6;
   transform: translate(-50%, -50%);
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: transform 0.05s ease-out;
+  box-sizing: border-box;
+  transition: transform 0.04s ease-out;
 }
-.lock-box::after {
-  content: 'LOCK';
+
+/* 4 High-Tech Arcade Corner Brackets */
+.lock-box .lock-corner {
   position: absolute;
-  bottom: -18px;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  filter: drop-shadow(0 0 6px rgba(255, 34, 68, 0.85));
+}
+.lock-box .lock-corner.top-left {
+  top: 0;
+  left: 0;
+  border-top: 2px solid #ff2244;
+  border-left: 2px solid #ff2244;
+}
+.lock-box .lock-corner.top-right {
+  top: 0;
+  right: 0;
+  border-top: 2px solid #ff2244;
+  border-right: 2px solid #ff2244;
+}
+.lock-box .lock-corner.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 2px solid #ff2244;
+  border-left: 2px solid #ff2244;
+}
+.lock-box .lock-corner.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid #ff2244;
+  border-right: 2px solid #ff2244;
+}
+
+.lock-box .lock-tag {
+  position: absolute;
+  bottom: -20px;
+  font-family: 'Impact', 'Arial Black', sans-serif;
   font-size: 11px;
   color: #ff3344;
-  font-weight: bold;
-  letter-spacing: 1px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 8px #ff0044;
+  white-space: nowrap;
 }
-.lock-box.climax-lock {
-  border-color: #ffe600;
-  box-shadow: 0 0 18px #ffe600;
+
+/* Climax Lock Reticles (Electric Gold) */
+.lock-box.climax-lock .lock-corner {
+  filter: drop-shadow(0 0 8px rgba(255, 230, 0, 0.9));
 }
-.lock-box.climax-lock::after {
-  content: 'CLIMAX LOCK';
+.lock-box.climax-lock .lock-corner.top-left {
+  border-top-color: #ffe600;
+  border-left-color: #ffe600;
+}
+.lock-box.climax-lock .lock-corner.top-right {
+  border-top-color: #ffe600;
+  border-right-color: #ffe600;
+}
+.lock-box.climax-lock .lock-corner.bottom-left {
+  border-bottom-color: #ffe600;
+  border-left-color: #ffe600;
+}
+.lock-box.climax-lock .lock-corner.bottom-right {
+  border-bottom-color: #ffe600;
+  border-right-color: #ffe600;
+}
+.lock-box.climax-lock .lock-tag {
   color: #ffe600;
+  text-shadow: 0 0 10px #ffe600;
+}
+
+/* Boss Core Target: Distinct Cyan Glowing Tactical Reticle */
+.lock-box.boss-core-lock {
+  width: 64px;
+  height: 64px;
+}
+.lock-box.boss-core-lock .lock-corner {
+  width: 14px;
+  height: 14px;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.95));
+}
+.lock-box.boss-core-lock .lock-corner.top-left {
+  border-top-color: #00f0ff;
+  border-left-color: #00f0ff;
+}
+.lock-box.boss-core-lock .lock-corner.top-right {
+  border-top-color: #00f0ff;
+  border-right-color: #00f0ff;
+}
+.lock-box.boss-core-lock .lock-corner.bottom-left {
+  border-bottom-color: #00f0ff;
+  border-left-color: #00f0ff;
+}
+.lock-box.boss-core-lock .lock-corner.bottom-right {
+  border-bottom-color: #00f0ff;
+  border-right-color: #00f0ff;
+}
+.lock-box.boss-core-lock .lock-tag {
+  color: #00f0ff;
+  font-size: 12px;
+  text-shadow: 0 0 12px #00f0ff;
+  animation: pulse-core-tag 0.5s infinite alternate;
+}
+
+@keyframes pulse-core-tag {
+  from { opacity: 0.75; transform: scale(0.95); }
+  to { opacity: 1.0; transform: scale(1.05); }
 }
 
 /* Mobile Virtual Touch Controls (Shown only on touch devices) */

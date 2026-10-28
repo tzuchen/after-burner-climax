@@ -34,6 +34,7 @@ export class CombatSystem {
 
     this.warningTimer = 0;
     this.evadeBannerTimer = 0;
+    this.lastBeepTime = 0;
     this.tempVec = new THREE.Vector3();
   }
 
@@ -126,8 +127,14 @@ export class CombatSystem {
       const availableTargets = [];
       enemies.forEach(en => { if (en.alive) availableTargets.push(en); });
       if (boss && boss.active && boss.alive) {
-        boss.turrets.forEach(t => { if (t.alive) availableTargets.push(t); });
-        availableTargets.push({ id: 999, mesh: boss.coreMesh, alive: true, isBossCore: true });
+        if (typeof boss.getTargets === 'function') {
+          boss.getTargets().forEach(t => availableTargets.push(t));
+        } else {
+          if (boss.coreTarget && boss.coreTarget.alive) availableTargets.push(boss.coreTarget);
+          if (Array.isArray(boss.turrets)) {
+            boss.turrets.forEach(t => { if (t.alive) availableTargets.push(t); });
+          }
+        }
       }
 
       for (let i = 0; i < spw.lockCount; i++) {
@@ -172,6 +179,17 @@ export class CombatSystem {
       sound.playMissileLaunch();
 
       const targets = enemies.filter(en => en.alive);
+      if (boss && boss.active && boss.alive) {
+        if (typeof boss.getTargets === 'function') {
+          boss.getTargets().forEach(t => targets.push(t));
+        } else {
+          if (boss.coreTarget && boss.coreTarget.alive) targets.push(boss.coreTarget);
+          if (Array.isArray(boss.turrets)) {
+            boss.turrets.forEach(t => { if (t.alive) targets.push(t); });
+          }
+        }
+      }
+
       for (let i = 0; i < spw.lockCount; i++) {
         const target = targets[i % Math.max(1, targets.length)] || null;
         const mesh = createPlayerMissileMesh();
@@ -245,60 +263,157 @@ export class CombatSystem {
 
   // --- LOCK-ON TARGETING & CLIMAX MATRIX ---
   updateLockOn(enemies, boss) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
     const screenW = window.innerWidth;
     const screenH = window.innerHeight;
-    // Climax Mode triples lock reticle radius to cover almost entire screen!
-    const lockRadius = state.isClimax ? screenW * 0.75 : 185;
+    const centerScreenX = screenW * 0.5;
+    const centerScreenY = screenH * 0.5;
 
-    const targets = [...enemies];
-    if (boss && boss.active && boss.alive) {
-      boss.turrets.forEach(t => { if (t.alive) targets.push(t); });
-      targets.push({ id: 999, mesh: boss.coreMesh, alive: true, isBossCore: true });
+    // Reticle radius: In Climax mode it expands to 45% of screen min dimension
+    const lockRadius = state.isClimax ? Math.min(screenW, screenH) * 0.45 : 185;
+    const maxLocks = state.isClimax ? 10 : 4;
+
+    // 1. Collect all candidate targets
+    const candidates = [];
+    if (Array.isArray(enemies)) {
+      enemies.forEach(en => {
+        if (en && en.alive && en.mesh) candidates.push(en);
+      });
     }
 
-    targets.forEach(target => {
-      if (!target.alive) return;
+    if (boss && boss.active && boss.alive) {
+      if (typeof boss.getTargets === 'function') {
+        const bossTargets = boss.getTargets();
+        bossTargets.forEach(bt => {
+          if (bt && bt.alive && bt.mesh) candidates.push(bt);
+        });
+      } else {
+        if (boss.coreTarget && boss.coreTarget.alive) candidates.push(boss.coreTarget);
+        if (Array.isArray(boss.turrets)) {
+          boss.turrets.forEach(t => { if (t && t.alive) candidates.push(t); });
+        }
+      }
+    }
 
+    // 2. Project each candidate to screen coordinates
+    const eligible = [];
+    candidates.forEach(target => {
       this.tempVec.setFromMatrixPosition(target.mesh.matrixWorld);
       this.tempVec.project(this.camera);
 
+      // Must be in front of camera
+      if (this.tempVec.z >= 1.0) return;
+
       const screenX = (this.tempVec.x * 0.5 + 0.5) * screenW;
       const screenY = (-(this.tempVec.y * 0.5) + 0.5) * screenH;
-      const inFront = this.tempVec.z < 1.0;
-      const distFromCenter = Math.hypot(screenX - screenW / 2, screenY - screenH / 2);
+      const distFromCenter = Math.hypot(screenX - centerScreenX, screenY - centerScreenY);
 
-      if (inFront && distFromCenter < lockRadius) {
-        if (!target.isLocked) {
-          target.isLocked = true;
-          sound.playLockBeep();
+      if (distFromCenter <= lockRadius) {
+        // Priority: Boss Core is highest priority (0), then active turrets (10), then normal planes (50)
+        let priority = 50;
+        if (target.isBossCore) priority = 0;
+        else if (target.type === 'FLAK' || target.type === 'SAM') priority = 10;
 
-          const box = document.createElement('div');
-          box.className = state.isClimax ? 'lock-box climax-lock' : 'lock-box';
-          document.body.appendChild(box);
-          this.lockBoxes.set(target.id, box);
-
-          // In Climax Mode, automatically fire swarming missiles on lock!
-          if (state.isClimax) {
-            this.firePlayerMissile(target, this.camera.parent || { position: new THREE.Vector3() });
-          }
-        }
-
-        const domBox = this.lockBoxes.get(target.id);
-        if (domBox) {
-          domBox.style.left = `${screenX}px`;
-          domBox.style.top = `${screenY}px`;
-        }
-      } else {
-        if (target.isLocked && !state.isClimax) {
-          target.isLocked = false;
-          const domBox = this.lockBoxes.get(target.id);
-          if (domBox) {
-            domBox.remove();
-            this.lockBoxes.delete(target.id);
-          }
-        }
+        eligible.push({
+          target,
+          screenX,
+          screenY,
+          distFromCenter,
+          priority
+        });
       }
     });
+
+    // 3. Sort eligible by priority and distance to center
+    eligible.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return a.distFromCenter - b.distFromCenter;
+    });
+
+    // 4. Select targets respecting lock limits and boss turret clutter caps
+    const selectedTargets = [];
+    let bossTurretCount = 0;
+
+    for (const item of eligible) {
+      if (selectedTargets.length >= maxLocks) break;
+      const isTurret = item.target.id && String(item.target.id).startsWith('boss_turret_');
+      if (isTurret && !state.isClimax) {
+        if (bossTurretCount >= 2) continue; // Cap to max 2 turrets at once in normal flight
+        bossTurretCount++;
+      }
+      selectedTargets.push(item);
+    }
+
+    const currentLockedIds = new Set();
+    const now = performance.now();
+
+    // 5. Update or create lock boxes for selected targets
+    selectedTargets.forEach(({ target, screenX, screenY }) => {
+      currentLockedIds.add(target.id);
+
+      if (!this.lockBoxes.has(target.id)) {
+        target.isLocked = true;
+
+        if (now - this.lastBeepTime > 90) {
+          this.lastBeepTime = now;
+          sound.playLockBeep();
+        }
+
+        const box = document.createElement('div');
+        const isCore = !!target.isBossCore;
+        let className = 'lock-box';
+        if (state.isClimax) className += ' climax-lock';
+        if (isCore) className += ' boss-core-lock';
+        box.className = className;
+
+        let tagText = 'LOCK';
+        if (isCore) {
+          tagText = 'CORE TARGET';
+        } else if (target.type === 'FLAK') {
+          tagText = 'FLAK ARRAY';
+        } else if (target.type === 'SAM') {
+          tagText = 'SAM BATTERY';
+        } else if (state.isClimax) {
+          tagText = 'CLIMAX LOCK';
+        }
+
+        box.innerHTML = `
+          <div class="lock-corner top-left"></div>
+          <div class="lock-corner top-right"></div>
+          <div class="lock-corner bottom-left"></div>
+          <div class="lock-corner bottom-right"></div>
+          <span class="lock-tag">${tagText}</span>
+        `;
+
+        document.body.appendChild(box);
+        this.lockBoxes.set(target.id, box);
+
+        // In Climax Mode, auto-fire swarming missile ONCE on initial lock!
+        if (state.isClimax) {
+          const playerGroup = this.camera.parent || { position: new THREE.Vector3() };
+          this.firePlayerMissile(target, playerGroup);
+        }
+      }
+
+      // Update position of active lock box
+      const domBox = this.lockBoxes.get(target.id);
+      if (domBox) {
+        domBox.style.left = `${screenX}px`;
+        domBox.style.top = `${screenY}px`;
+      }
+    });
+
+    // 6. Clean up lock boxes for any targets no longer locked
+    for (const [id, box] of this.lockBoxes.entries()) {
+      if (!currentLockedIds.has(id)) {
+        if (box && box.parentNode) box.parentNode.removeChild(box);
+        this.lockBoxes.delete(id);
+
+        const cand = candidates.find(c => c.id === id);
+        if (cand) cand.isLocked = false;
+      }
+    }
   }
 
   // --- MAIN COMBAT LOOP ---
@@ -332,28 +447,51 @@ export class CombatSystem {
       if (m.target && m.target.alive) {
         const targetPos = new THREE.Vector3();
         m.target.mesh.getWorldPosition(targetPos);
-        if (m.mesh.position.distanceTo(targetPos) < 24) {
+        if (m.mesh.position.distanceTo(targetPos) < 28) {
           hit = true;
-          m.target.alive = false;
 
-          // Remove Target & Lock box
+          // Unlock and remove lock box immediately
           const domBox = this.lockBoxes.get(m.target.id);
-          if (domBox) { domBox.remove(); this.lockBoxes.delete(m.target.id); }
+          if (domBox) {
+            if (domBox.parentNode) domBox.parentNode.removeChild(domBox);
+            this.lockBoxes.delete(m.target.id);
+          }
+          m.target.isLocked = false;
 
           if (m.target.isBossCore && boss) {
-            boss.damageCore(15);
-            this.particles.createExplosion(targetPos, 45, true);
+            const damage = m.damage || 12;
+            const remainingHp = boss.damageCore(damage);
+            this.particles.createExplosion(targetPos, 48, true);
             sound.playExplosion();
             this.spawnScorePopup(targetPos, CONFIG.SCORE.KILL_BOSS_CORE, 'CORE HIT');
+            state.addScore(CONFIG.SCORE.KILL_BOSS_CORE);
+
+            if (remainingHp <= 0) {
+              m.target.alive = false;
+              radio.speak("Target Core destroyed! Massive chain reaction underway!", "RIO MAVERICK", true);
+            }
+          } else if (m.target.id && String(m.target.id).startsWith('boss_turret_') && boss) {
+            const damage = m.damage || 35;
+            const remainingTurretHp = boss.damageTurret(m.target.id, damage);
+            this.particles.createExplosion(targetPos, 34);
+            sound.playExplosion();
+
+            if (remainingTurretHp <= 0) {
+              m.target.alive = false;
+              this.spawnScorePopup(targetPos, CONFIG.SCORE.KILL_BOSS_TURRET, 'TURRET DESTROYED');
+              state.addScore(CONFIG.SCORE.KILL_BOSS_TURRET);
+              state.registerKill(state.isClimax);
+            }
           } else {
+            // Normal enemy plane
+            m.target.alive = false;
             this.scene.remove(m.target.mesh);
             this.particles.createExplosion(targetPos, 32);
             sound.playExplosion();
             this.spawnScorePopup(targetPos, CONFIG.SCORE.KILL_AIR, state.comboCount > 1 ? `x${state.comboCount} COMBO` : '');
+            state.addScore(CONFIG.SCORE.KILL_AIR);
+            state.registerKill(state.isClimax);
           }
-
-          state.addScore(CONFIG.SCORE.KILL_AIR);
-          state.registerKill(state.isClimax);
         }
       }
 
@@ -489,7 +627,10 @@ export class CombatSystem {
             en.alive = false;
             this.scene.remove(en.mesh);
             const domBox = this.lockBoxes.get(en.id);
-            if (domBox) { domBox.remove(); this.lockBoxes.delete(en.id); }
+            if (domBox) {
+              if (domBox.parentNode) domBox.parentNode.removeChild(domBox);
+              this.lockBoxes.delete(en.id);
+            }
             this.particles.createExplosion(en.mesh.position, 28);
             state.addScore(CONFIG.SCORE.KILL_AIR);
             state.registerKill(state.isClimax);
@@ -497,16 +638,29 @@ export class CombatSystem {
         });
 
         if (boss && boss.active && boss.alive) {
-          boss.turrets.forEach(t => {
-            if (t.alive && t.mesh.position.distanceTo(blastPos) < 60) {
-              t.alive = false;
-              this.scene.remove(t.mesh);
-              state.addScore(CONFIG.SCORE.KILL_BOSS_TURRET);
-              this.particles.createExplosion(t.mesh.position, 35);
+          if (Array.isArray(boss.turrets)) {
+            boss.turrets.forEach(t => {
+              if (t.alive && t.mesh) {
+                const tw = new THREE.Vector3();
+                t.mesh.getWorldPosition(tw);
+                if (tw.distanceTo(blastPos) < 60) {
+                  const rem = boss.damageTurret(t.id, cb.damage || 35);
+                  this.particles.createExplosion(tw, 35);
+                  if (rem <= 0) {
+                    this.spawnScorePopup(tw, CONFIG.SCORE.KILL_BOSS_TURRET, 'TURRET DESTROYED');
+                    state.addScore(CONFIG.SCORE.KILL_BOSS_TURRET);
+                  }
+                }
+              }
+            });
+          }
+          if (boss.coreMesh && boss.coreTarget && boss.coreTarget.alive) {
+            const cw = new THREE.Vector3();
+            boss.coreMesh.getWorldPosition(cw);
+            if (cw.distanceTo(blastPos) < 70) {
+              boss.damageCore(cb.damage ? cb.damage * 0.5 : 20);
+              this.particles.createExplosion(cw, 45, true);
             }
-          });
-          if (boss.coreMesh.position.distanceTo(blastPos) < 70) {
-            boss.damageCore(20);
           }
         }
 
@@ -564,19 +718,22 @@ export class CombatSystem {
       }
     }
 
-    // 4. Update Player Bullets & Missile Interception
+    // 4. Update Player Bullets, Missile Interception & Boss Cannon Hits
     for (let i = this.playerBullets.length - 1; i >= 0; i--) {
       const b = this.playerBullets[i];
       b.mesh.position.z += b.zSpeed * dt;
       b.life -= dt;
 
-      // Check collision with enemies
+      // Check collision with normal enemies
       enemies.forEach(en => {
         if (en.alive && b.mesh.position.distanceTo(en.mesh.position) < 20) {
           en.alive = false;
           this.scene.remove(en.mesh);
           const domBox = this.lockBoxes.get(en.id);
-          if (domBox) { domBox.remove(); this.lockBoxes.delete(en.id); }
+          if (domBox) {
+            if (domBox.parentNode) domBox.parentNode.removeChild(domBox);
+            this.lockBoxes.delete(en.id);
+          }
 
           this.particles.createExplosion(en.mesh.position, 28);
           sound.playExplosion();
@@ -586,6 +743,39 @@ export class CombatSystem {
           b.life = 0;
         }
       });
+
+      // Check collision with boss if active
+      if (boss && boss.active && boss.alive && b.life > 0) {
+        if (boss.coreMesh && boss.coreTarget && boss.coreTarget.alive) {
+          const coreWorld = new THREE.Vector3();
+          boss.coreMesh.getWorldPosition(coreWorld);
+          if (b.mesh.position.distanceTo(coreWorld) < 22) {
+            boss.damageCore(b.damage || 1.8);
+            this.particles.createSparks(b.mesh.position, 0xff3300);
+            b.life = 0;
+            state.addScore(25);
+          }
+        }
+        if (Array.isArray(boss.turrets) && b.life > 0) {
+          boss.turrets.forEach(t => {
+            if (t.alive && t.mesh && b.life > 0) {
+              const turretWorld = new THREE.Vector3();
+              t.mesh.getWorldPosition(turretWorld);
+              if (b.mesh.position.distanceTo(turretWorld) < 18) {
+                const rem = boss.damageTurret(t.id, b.damage || 8);
+                this.particles.createSparks(b.mesh.position, 0xffaa00);
+                b.life = 0;
+                if (rem <= 0) {
+                  this.particles.createExplosion(turretWorld, 30);
+                  sound.playExplosion();
+                  this.spawnScorePopup(turretWorld, CONFIG.SCORE.KILL_BOSS_TURRET, 'TURRET DESTROYED');
+                  state.addScore(CONFIG.SCORE.KILL_BOSS_TURRET);
+                }
+              }
+            }
+          });
+        }
+      }
 
       // Intercept incoming enemy missiles!
       for (let emIdx = this.enemyMissiles.length - 1; emIdx >= 0; emIdx--) {
@@ -638,7 +828,16 @@ export class CombatSystem {
     this.enemyBullets = [];
     this.flareDecoys = [];
     this.clusterBombs = [];
-    this.lockBoxes.forEach(box => box.remove());
+
+    // Clean up all DOM lock boxes tracked by Map
+    this.lockBoxes.forEach(box => {
+      if (box && box.parentNode) box.parentNode.removeChild(box);
+    });
     this.lockBoxes.clear();
+
+    // Redundant fail-safe: clean up any orphaned lock-box elements in the DOM
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.lock-box').forEach(el => el.remove());
+    }
   }
 }
