@@ -2,9 +2,11 @@
    AFTER BURNER CLIMAX - F-14 TOMCAT FIGHTER MODEL
    High-Fidelity Aerodynamics, Dynamic Variable-Sweep Wings,
    Tandem Martin-Baker Mk.14 Seats, Slime Lights & Shock Diamonds
+   Features: Path A High-Detail 3D Polygonal Model with Procedural Fallback
    ============================================================ */
 
 import { createNavalCamoTexture, createCockpitInstrumentsTexture } from './textures.js';
+import { modelManager } from './model_loader.js';
 
 export class PlayerF14 {
   constructor(scene) {
@@ -78,8 +80,26 @@ export class PlayerF14 {
       vortexTrails: []
     };
 
+    this.proceduralBody = new THREE.Group();
+    this.group.add(this.proceduralBody);
+    this.gltfMesh = null;
+
     this.build();
     this.initVortexTrails();
+
+    // Asynchronously swap in Path A authentic 3D Polygonal GLTF model
+    if (modelManager) {
+      modelManager.loadAll(() => {
+        if (modelManager.hasModel('F14D') && !this.gltfMesh) {
+          const mesh = modelManager.getModel('F14D');
+          if (mesh) {
+            this.proceduralBody.visible = false;
+            this.group.add(mesh);
+            this.gltfMesh = mesh;
+          }
+        }
+      });
+    }
   }
 
   build() {
@@ -88,58 +108,58 @@ export class PlayerF14 {
     noseGeo.rotateX(Math.PI / 2);
     const nose = new THREE.Mesh(noseGeo, this.skinMat);
     nose.position.set(0, 0, -8.6);
-    this.group.add(nose);
+    this.proceduralBody.add(nose);
 
     // Pitot Probe (Long airspeed probe at tip of radome)
     const pitotGeo = new THREE.CylinderGeometry(0.04, 0.04, 4.2, 8);
     pitotGeo.rotateX(Math.PI / 2);
     const pitot = new THREE.Mesh(pitotGeo, this.darkMat);
     pitot.position.set(0, 0, -14.8);
-    this.group.add(pitot);
+    this.proceduralBody.add(pitot);
 
     // F-14D Dual Chin Pod (TCS Optical Camera & IRST Sensor) Under Radome
     const chinPodGeo = new THREE.CylinderGeometry(0.35, 0.32, 2.6, 12);
     chinPodGeo.rotateX(Math.PI / 2);
     const chinPod = new THREE.Mesh(chinPodGeo, this.darkMat);
     chinPod.position.set(0, -1.0, -8.2);
-    this.group.add(chinPod);
+    this.proceduralBody.add(chinPod);
 
     const chinSensorLens = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), this.visorMat);
     chinSensorLens.position.set(0, -1.0, -9.6);
-    this.group.add(chinSensorLens);
+    this.proceduralBody.add(chinSensorLens);
 
     // 2. Center Fuselage & Pancake Tunnel
     const bodyGeo = new THREE.BoxGeometry(4.8, 1.6, 12);
     const body = new THREE.Mesh(bodyGeo, this.skinMat);
     body.position.set(0, 0, -0.5);
-    this.group.add(body);
+    this.proceduralBody.add(body);
 
     // Blended Wing Glove Fairings (Leading-Edge Glove LERX)
     const gloveLGeo = new THREE.BoxGeometry(1.7, 0.5, 8.2);
     const gloveL = new THREE.Mesh(gloveLGeo, this.skinMat);
     gloveL.position.set(-2.8, 0.1, -2.5);
-    this.group.add(gloveL);
+    this.proceduralBody.add(gloveL);
 
     const gloveR = gloveL.clone();
     gloveR.position.x = 2.8;
-    this.group.add(gloveR);
+    this.proceduralBody.add(gloveR);
 
     // 3. Underslung Dual Rectangular Air Intakes with Internal Ramps
     const intakeGeo = new THREE.BoxGeometry(1.5, 1.25, 7.2);
     const leftIntake = new THREE.Mesh(intakeGeo, this.darkMat);
     leftIntake.position.set(-1.8, -0.9, -1.8);
-    this.group.add(leftIntake);
+    this.proceduralBody.add(leftIntake);
 
     const rightIntake = leftIntake.clone();
     rightIntake.position.x = 1.8;
-    this.group.add(rightIntake);
+    this.proceduralBody.add(rightIntake);
 
     // 4. Belly Pallets (4x Semi-Submerged AIM-54 Phoenix Missile Pallets)
     const palletGeo = new THREE.BoxGeometry(0.85, 0.45, 6.0);
     [-0.9, 0.9].forEach(ox => {
       const pallet = new THREE.Mesh(palletGeo, this.darkMat);
       pallet.position.set(ox, -0.9, 0.5);
-      this.group.add(pallet);
+      this.proceduralBody.add(pallet);
     });
 
     // 5. Tandem Cockpit & Pilots (Martin-Baker Mk.14 Ejection Seats)
@@ -147,14 +167,14 @@ export class PlayerF14 {
     canopyGeo.scale(0.85, 1.15, 3.8);
     const canopy = new THREE.Mesh(canopyGeo, this.canopyMat);
     canopy.position.set(0, 1.15, -3.2);
-    this.group.add(canopy);
+    this.proceduralBody.add(canopy);
 
     // Canopy Windshield Arch Frame
     const frameGeo = new THREE.TorusGeometry(0.95, 0.06, 8, 20, Math.PI);
     frameGeo.rotateY(Math.PI / 2);
     const frame = new THREE.Mesh(frameGeo, this.darkMat);
     frame.position.set(0, 0.8, -3.2);
-    this.group.add(frame);
+    this.proceduralBody.add(frame);
 
     // Ejection Seats (Pilot & RIO)
     const seatGeo = new THREE.BoxGeometry(0.65, 1.1, 0.65);
@@ -170,7 +190,7 @@ export class PlayerF14 {
     pilotHead.position.set(0, 0.82, -4.2);
     const visorF = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.14, 0.15), this.visorMat);
     visorF.position.set(0, 0.86, -4.5);
-    this.group.add(seatF); this.group.add(handleF); this.group.add(pilotHead); this.group.add(visorF);
+    this.proceduralBody.add(seatF); this.proceduralBody.add(handleF); this.proceduralBody.add(pilotHead); this.proceduralBody.add(visorF);
 
     // RIO (Radar Intercept Officer - Rear Seat)
     const seatB = new THREE.Mesh(seatGeo, this.seatMat);
@@ -181,7 +201,7 @@ export class PlayerF14 {
     rioHead.position.set(0, 0.95, -2.2);
     const visorB = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.14, 0.15), this.visorMat);
     visorB.position.set(0, 0.99, -2.5);
-    this.group.add(seatB); this.group.add(handleB); this.group.add(rioHead); this.group.add(visorB);
+    this.proceduralBody.add(seatB); this.proceduralBody.add(handleB); this.proceduralBody.add(rioHead); this.proceduralBody.add(visorB);
 
     // Cockpit Interior Panel (Visible in 1st Person / Cockpit View)
     const panelGeo = new THREE.PlaneGeometry(2.2, 1.1);
@@ -189,7 +209,7 @@ export class PlayerF14 {
     const cockpitPanel = new THREE.Mesh(panelGeo, panelMat);
     cockpitPanel.position.set(0, 0.6, -4.9);
     cockpitPanel.rotation.x = -0.35;
-    this.group.add(cockpitPanel);
+    this.proceduralBody.add(cockpitPanel);
     this.parts.cockpitInterior = cockpitPanel;
 
     // 6. Twin Engine Nacelles & Ventral Strakes
@@ -197,34 +217,34 @@ export class PlayerF14 {
     nacelleGeo.rotateX(Math.PI / 2);
     const leftNacelle = new THREE.Mesh(nacelleGeo, this.skinMat);
     leftNacelle.position.set(-2.2, -0.2, 4.2);
-    this.group.add(leftNacelle);
+    this.proceduralBody.add(leftNacelle);
 
     const rightNacelle = leftNacelle.clone();
     rightNacelle.position.x = 2.2;
-    this.group.add(rightNacelle);
+    this.proceduralBody.add(rightNacelle);
 
     const vFinGeo = new THREE.BoxGeometry(0.18, 1.4, 4.2);
     const leftVFin = new THREE.Mesh(vFinGeo, this.darkMat);
     leftVFin.position.set(-2.2, -1.2, 5.5);
     leftVFin.rotation.z = -0.15;
-    this.group.add(leftVFin);
+    this.proceduralBody.add(leftVFin);
 
     const rightVFin = leftVFin.clone();
     rightVFin.position.x = 2.2; rightVFin.rotation.z = 0.15;
-    this.group.add(rightVFin);
+    this.proceduralBody.add(rightVFin);
 
     // 7. Titanium Exhaust Nozzles & Variable Petals
     const nozzleGeo = new THREE.CylinderGeometry(1.22, 1.25, 2.4, 20);
     nozzleGeo.rotateX(Math.PI / 2);
     const leftNozzle = new THREE.Mesh(nozzleGeo, this.titaniumNozzleMat);
     leftNozzle.position.set(-2.2, -0.2, 9.8);
-    this.group.add(leftNozzle);
+    this.proceduralBody.add(leftNozzle);
 
     const rightNozzle = leftNozzle.clone();
     rightNozzle.position.x = 2.2;
-    this.group.add(rightNozzle);
+    this.proceduralBody.add(rightNozzle);
 
-    // Multistage Afterburner Plumes
+    // Multistage Afterburner Plumes (Kept in main group for VFX consistency)
     const flameOuterGeo = new THREE.ConeGeometry(1.15, 14, 16);
     flameOuterGeo.rotateX(-Math.PI / 2);
     const flameOuterMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.85 });
@@ -268,7 +288,7 @@ export class PlayerF14 {
     // 8. DYNAMIC VARIABLE-SWEEP MAIN WINGS (20° Forward to 68° Oversweep)
     const leftPivot = new THREE.Group();
     leftPivot.position.set(-2.3, 0.2, 0.5);
-    this.group.add(leftPivot);
+    this.proceduralBody.add(leftPivot);
 
     const wingBladeGeo = new THREE.BoxGeometry(11, 0.26, 4.2);
     wingBladeGeo.translate(-5.5, 0, 0.8);
@@ -298,7 +318,7 @@ export class PlayerF14 {
     // Right Wing Assembly
     const rightPivot = new THREE.Group();
     rightPivot.position.set(2.3, 0.2, 0.5);
-    this.group.add(rightPivot);
+    this.proceduralBody.add(rightPivot);
 
     const rightBladeGeo = new THREE.BoxGeometry(11, 0.26, 4.2);
     rightBladeGeo.translate(5.5, 0, 0.8);
@@ -323,12 +343,12 @@ export class PlayerF14 {
     const stabGeo = new THREE.BoxGeometry(4.6, 0.18, 3.8);
     const leftStab = new THREE.Mesh(stabGeo, this.skinMat);
     leftStab.position.set(-3.6, -0.1, 9.2);
-    this.group.add(leftStab);
+    this.proceduralBody.add(leftStab);
     this.parts.leftStab = leftStab;
 
     const rightStab = leftStab.clone();
     rightStab.position.x = 3.6;
-    this.group.add(rightStab);
+    this.proceduralBody.add(rightStab);
     this.parts.rightStab = rightStab;
 
     // 10. Twin Cant-Angle Vertical Stabilizers & Slime Lights
@@ -336,21 +356,21 @@ export class PlayerF14 {
     const leftFin = new THREE.Mesh(finGeo, this.skinMat);
     leftFin.position.set(-2.4, 2.3, 7.2);
     leftFin.rotation.z = 0.12;
-    this.group.add(leftFin);
+    this.proceduralBody.add(leftFin);
 
     const finSlimeL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.2), this.slimeLightMat);
     finSlimeL.position.set(-2.55, 3.2, 7.2);
     finSlimeL.rotation.z = 0.12;
-    this.group.add(finSlimeL);
+    this.proceduralBody.add(finSlimeL);
 
     const rightFin = leftFin.clone();
     rightFin.position.x = 2.4; rightFin.rotation.z = -0.12;
-    this.group.add(rightFin);
+    this.proceduralBody.add(rightFin);
 
     const finSlimeR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.2), this.slimeLightMat);
     finSlimeR.position.set(2.55, 3.2, 7.2);
     finSlimeR.rotation.z = -0.12;
-    this.group.add(finSlimeR);
+    this.proceduralBody.add(finSlimeR);
   }
 
   initVortexTrails() {

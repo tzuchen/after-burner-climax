@@ -5,6 +5,7 @@
    ============================================================ */
 
 import { createNavalCamoTexture, createCockpitInstrumentsTexture } from './textures.js';
+import { modelManager } from './model_loader.js';
 
 export class AircraftFleetBuilder {
   constructor() {
@@ -28,6 +29,9 @@ export class AircraftFleetBuilder {
 
   // --- 1. F-15E STRIKE EAGLE ---
   buildF15E() {
+    if (modelManager && modelManager.hasModel('F15E')) {
+      return modelManager.createEnhancedAircraft('F15E');
+    }
     const group = new THREE.Group();
     const parts = { leftWing: null, rightWing: null, leftStab: null, rightStab: null, flames: [], shockDiamonds: [] };
 
@@ -154,6 +158,9 @@ export class AircraftFleetBuilder {
 
   // --- 2. F/A-18E SUPER HORNET ---
   buildFA18E() {
+    if (modelManager && modelManager.hasModel('FA18E')) {
+      return modelManager.createEnhancedAircraft('FA18E');
+    }
     const group = new THREE.Group();
     const parts = { leftWing: null, rightWing: null, leftStab: null, rightStab: null, flames: [], shockDiamonds: [] };
 
@@ -282,6 +289,9 @@ export class AircraftFleetBuilder {
 
   // --- 3. A-10C WARTHOG ---
   buildA10C() {
+    if (modelManager && modelManager.hasModel('A10C')) {
+      return modelManager.createEnhancedAircraft('A10C');
+    }
     const group = new THREE.Group();
     const parts = { leftWing: null, rightWing: null, leftStab: null, rightStab: null, flames: [] };
 

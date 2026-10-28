@@ -1,10 +1,10 @@
 /* ============================================================
    AFTER BURNER CLIMAX - SU-27 FLANKER ENEMY FIGHTER MODEL
-   Russian Heavy Interceptor with Drooping Nose & Tail Sting
-   Features: 1024x1024 Aggressor Splinter PBR, Titanium Nozzles
+   Authentic 3D Polygonal Mesh (Path A) with Procedural Fallback
    ============================================================ */
 
 import { createAggressorCamoTexture } from './textures.js';
+import { modelManager } from './model_loader.js';
 
 let sharedEnemySkinMat = null;
 let sharedEnemyRedMat = null;
@@ -23,91 +23,85 @@ function getMaterials() {
 }
 
 export function buildSu27Mesh() {
+  // 1. High-Quality 3D Polygonal Mesh (Path A)
+  if (modelManager && modelManager.hasModel('SU27')) {
+    const eGroup = new THREE.Group();
+    const model = modelManager.getModel('SU27');
+    eGroup.add(model);
+
+    // Glowing Russian Afterburner Exhaust Plumes
+    [-1.8, 1.8].forEach(ox => {
+      const exhaust = new THREE.Mesh(
+        new THREE.ConeGeometry(0.85, 6.5, 12).rotateX(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 })
+      );
+      exhaust.position.set(ox, -0.4, -9.8);
+      eGroup.add(exhaust);
+    });
+
+    return eGroup;
+  }
+
+  // 2. Procedural Fallback if GLTF not loaded
   const mats = getMaterials();
   const eGroup = new THREE.Group();
 
-  // 1. Long Pointed Drooping Nose
-  const noseGeo = new THREE.ConeGeometry(1.35, 9.2, 16);
-  noseGeo.rotateX(-Math.PI / 2);
+  // Long Pointed Drooping Nose
+  const noseGeo = new THREE.ConeGeometry(1.35, 9.2, 16).rotateX(-Math.PI / 2);
   const nose = new THREE.Mesh(noseGeo, mats.skinMat);
   nose.position.set(0, -0.2, 5.5);
   eGroup.add(nose);
 
-  // Red nosecone tip
-  const tipGeo = new THREE.ConeGeometry(0.5, 2.2, 12);
-  tipGeo.rotateX(-Math.PI / 2);
+  const tipGeo = new THREE.ConeGeometry(0.5, 2.2, 12).rotateX(-Math.PI / 2);
   const tip = new THREE.Mesh(tipGeo, mats.redMat);
   tip.position.set(0, -0.2, 9.5);
   eGroup.add(tip);
 
-  // IRST Optical Ball (Infra-Red Search & Track sphere ahead of canopy)
-  const irstGeo = new THREE.SphereGeometry(0.32, 10, 10);
-  const irst = new THREE.Mesh(irstGeo, mats.darkMat);
+  const irst = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 10), mats.darkMat);
   irst.position.set(0.35, 0.85, 3.5);
   eGroup.add(irst);
 
-  // 2. Cockpit Canopy with Tint
-  const eCanopyGeo = new THREE.SphereGeometry(1.05, 18, 14);
-  eCanopyGeo.scale(0.75, 1.0, 3.2);
+  // Cockpit Canopy
+  const eCanopyGeo = new THREE.SphereGeometry(1.05, 18, 14).scale(0.75, 1.0, 3.2);
   const eCanopyMat = new THREE.MeshStandardMaterial({
-    color: 0x203545,
-    roughness: 0.1,
-    metalness: 0.9,
-    transparent: true,
-    opacity: 0.85
+    color: 0x203545, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85
   });
   const eCanopy = new THREE.Mesh(eCanopyGeo, eCanopyMat);
   eCanopy.position.set(0, 0.8, 1.8);
   eGroup.add(eCanopy);
 
-  // 3. Center Fuselage
-  const bodyGeo = new THREE.BoxGeometry(4.2, 1.4, 11);
-  const body = new THREE.Mesh(bodyGeo, mats.skinMat);
+  // Fuselage
+  const body = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.4, 11), mats.skinMat);
   body.position.set(0, 0, 0);
   eGroup.add(body);
 
-  // 4. Central "Sting" Tail Boom (Signature Su-27 feature!)
-  const stingGeo = new THREE.ConeGeometry(0.85, 6, 12);
-  stingGeo.rotateX(Math.PI / 2);
-  const sting = new THREE.Mesh(stingGeo, mats.skinMat);
+  // Sting Tail Boom
+  const sting = new THREE.Mesh(new THREE.ConeGeometry(0.85, 6, 12).rotateX(Math.PI / 2), mats.skinMat);
   sting.position.set(0, 0.2, -7.5);
   eGroup.add(sting);
 
-  // 5. Curved LERX & Swept Delta Wings
-  const wingGeo = new THREE.BoxGeometry(22, 0.28, 5.5);
-  const wings = new THREE.Mesh(wingGeo, mats.skinMat);
+  // Wings
+  const wings = new THREE.Mesh(new THREE.BoxGeometry(22, 0.28, 5.5), mats.skinMat);
   wings.position.set(0, 0, 0.5);
   eGroup.add(wings);
 
-  // Wingtip Missile Rails + Red Missiles
-  [-11.2, 11.2].forEach(ox => {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 4.2), mats.darkMat);
-    rail.position.set(ox, 0, 0.5);
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 4, 8).rotateX(Math.PI / 2), mats.redMat);
-    m.position.set(ox, -0.2, 0.5);
-    eGroup.add(rail);
-    eGroup.add(m);
-  });
-
-  // 6. Underslung Dual Engine Nacelles & Titanium Nozzles
+  // Dual Engines & Nozzles
   [-1.8, 1.8].forEach(ox => {
     const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.0, 9, 16).rotateX(Math.PI / 2), mats.skinMat);
     nacelle.position.set(ox, -0.4, -2.5);
     eGroup.add(nacelle);
 
-    // Titanium Nozzle
     const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.12, 1.8, 16).rotateX(Math.PI / 2), mats.titaniumMat);
     nozzle.position.set(ox, -0.4, -6.8);
     eGroup.add(nozzle);
 
-    // Enemy Afterburner Exhaust (Glowing Orange Plasma Cone)
     const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.85, 6.5, 12).rotateX(Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 }));
     exhaust.position.set(ox, -0.4, -9.8);
     eGroup.add(exhaust);
   });
 
-  // 7. Twin Cant-Angle Vertical Stabilizers
+  // Vertical Fins
   const finGeo = new THREE.BoxGeometry(0.22, 4.2, 4.5);
   const finL = new THREE.Mesh(finGeo, mats.redMat);
   finL.position.set(-2.2, 2.0, -3.5);

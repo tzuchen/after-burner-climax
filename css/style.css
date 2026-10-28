@@ -871,3 +871,22 @@ body, html {
   .stat-bar-outer { width: 180px; }
   .route-cards-grid { flex-direction: column; gap: 20px; }
 }
+
+/* Arcade Floater Score Popups */
+.arcade-score-popup {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-size: 22px;
+  text-shadow: 0 0 8px rgba(0,0,0,0.95), 2px 2px 0 #000, -2px -2px 0 #000;
+  pointer-events: none;
+  z-index: 100;
+  animation: scoreFloatUp 0.85s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes scoreFloatUp {
+  0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+  20% { transform: translate(-50%, -15px) scale(1.35); opacity: 1; }
+  80% { transform: translate(-50%, -45px) scale(1.0); opacity: 1; }
+  100% { transform: translate(-50%, -70px) scale(0.9); opacity: 0; }
+}

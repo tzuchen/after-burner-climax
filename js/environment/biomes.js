@@ -9,6 +9,7 @@ import { CloudSystem } from './volumetric_clouds.js';
 import { SpeedLineSystem } from './speedlines.js';
 import { WeatherSystem } from './weather.js';
 import { Advanced3DTerrainEngine } from './terrain_3d.js';
+import { ContinuousFractalTerrain } from './continuous_terrain.js';
 import { createOceanWaveNormalTexture } from '../models/textures.js';
 
 export class BiomeController {
@@ -101,6 +102,7 @@ export class BiomeController {
     this.scene.add(this.sunGroup);
 
     // 5. Subsystems
+    this.fractalTerrain = new ContinuousFractalTerrain(scene);
     this.clouds = new CloudSystem(scene);
     this.canyon = new CanyonEnvironment(scene);
     this.speedLines = new SpeedLineSystem(scene);
@@ -175,6 +177,7 @@ export class BiomeController {
     this.canyon.setActive(stageConfig.hasCanyon && stageConfig.biome === 'DESERT_CANYON');
 
     // 3D Procedural Terrain activation
+    this.fractalTerrain.setBiome(stageConfig.biome);
     this.terrain3D.setBiome(stageConfig.biome);
 
     // Weather activation
@@ -213,6 +216,7 @@ export class BiomeController {
     }
 
     // Update Subsystems
+    this.fractalTerrain.update(dt, forwardSpeed);
     this.clouds.update(dt, forwardSpeed);
     this.canyon.update(dt, forwardSpeed);
     this.terrain3D.update(dt, forwardSpeed);

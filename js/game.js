@@ -18,6 +18,7 @@ import { EnemyAIManager } from './systems/enemy_ai.js';
 import { ParticleEngine } from './systems/particles.js';
 import { CombatSystem } from './systems/combat.js';
 import { HUDController } from './systems/hud.js';
+import { modelManager } from './models/model_loader.js';
 
 class GameApp {
   constructor() {
@@ -75,6 +76,14 @@ class GameApp {
     // Apply Stage 1 Initial Environment & Show Hangar Turntable
     this.biomes.applyStageTheme(state.getCurrentStage());
     this.hangar.show(this.player);
+
+    // Preload Path A authentic 3D Polygonal Models (GLTF)
+    modelManager.loadAll(() => {
+      console.log("✈️ Path A 3D Polygonal Fleet Models Loaded!");
+      if (this.hangar) {
+        this.hangar.buildFleet();
+      }
+    });
   }
 
   bindInputCallbacks() {
@@ -444,9 +453,9 @@ class GameApp {
     const forwardSpeed = targetSpeed * (state.isClimax ? CONFIG.SPEED.CLIMAX_MULTIPLIER : 1.0);
     const machSpeed = (forwardSpeed / 420);
 
-    // 3. Dynamic Camera & FOV (Dolly Zoom effect)
-    const targetFOV = state.isAfterburner ? 76 : 60;
-    this.camera.fov += (targetFOV - this.camera.fov) * dt * 5.0;
+    // 3. Dynamic Camera & FOV (Arcade Kinematic Dolly Zoom & Speed Warp)
+    const targetFOV = state.isClimax ? 88 : (state.isAfterburner ? 82 : 60);
+    this.camera.fov += (targetFOV - this.camera.fov) * dt * 8.0;
     this.camera.updateProjectionMatrix();
 
     // 4. Player Controls & Attitude
@@ -465,11 +474,11 @@ class GameApp {
     this.player.group.rotation.y = -targetBank * 0.35;
     this.player.group.rotation.x = -targetPitch;
 
-    // Handle 360° Barrel Roll
+    // Handle 360° Barrel Roll (Aggressive Arcade Horizon Tumble)
     if (state.isRolling) {
       state.rollProgress += dtReal * (2.0 / CONFIG.SPEED.ROLL_DURATION);
       this.player.group.rotation.z = state.rollDir * state.rollProgress * Math.PI;
-      this.camera.rotation.z = -state.rollDir * Math.sin(state.rollProgress * Math.PI) * 0.35;
+      this.camera.rotation.z = -state.rollDir * Math.sin(state.rollProgress * Math.PI) * 0.65;
       if (state.rollProgress >= 2) {
         state.isRolling = false;
         this.camera.rotation.z = 0;
@@ -479,19 +488,28 @@ class GameApp {
 
       // Camera Positioning: 3rd-Person Chase Cam vs 1st-Person Cockpit View
       if (state.isCockpitView) {
-        // Cockpit Camera (Inside front seat)
+        // Cockpit Camera (Inside front seat with G-force horizon tilt)
         this.camera.position.set(
           this.player.group.position.x,
           this.player.group.position.y + 1.25,
           this.player.group.position.z - 3.8
         );
-        this.camera.rotation.set(-targetPitch * 0.8, -targetBank * 0.3, -targetBank * 0.5);
+        this.camera.rotation.set(-targetPitch * 0.8, -targetBank * 0.3, -this.player.group.rotation.z * 0.65);
       } else {
-        // Chase Cam (Smooth trailing behind with horizon bank)
-        this.camera.position.x += (this.player.group.position.x * 0.5 - this.camera.position.x) * dt * 6.0;
-        this.camera.position.y += ((this.player.group.position.y + 13) - this.camera.position.y) * dt * 6.0;
-        this.camera.position.z = 45;
-        this.camera.rotation.z += (-targetBank * 0.25 - this.camera.rotation.z) * dt * 4.0;
+        // Chase Cam: G-Force lag, acceleration pull-back & violent horizon roll
+        const targetCamZ = state.isAfterburner ? 50 : 42;
+        this.camera.position.x += (this.player.group.position.x * 0.55 - this.camera.position.x) * dt * 7.0;
+        this.camera.position.y += ((this.player.group.position.y + 14) - this.camera.position.y) * dt * 7.0;
+        this.camera.position.z += (targetCamZ - this.camera.position.z) * dt * 6.0;
+
+        // Supersonic airframe jitter
+        const jitterAmp = state.isAfterburner ? 0.35 : 0.08;
+        this.camera.position.x += (Math.random() - 0.5) * jitterAmp;
+        this.camera.position.y += (Math.random() - 0.5) * jitterAmp;
+
+        // Dynamic horizon bank response
+        const targetHorizonBank = -this.player.group.rotation.z * 0.55;
+        this.camera.rotation.z += (targetHorizonBank - this.camera.rotation.z) * dt * 6.0;
       }
     }
 

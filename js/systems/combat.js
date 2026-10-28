@@ -344,10 +344,12 @@ export class CombatSystem {
             boss.damageCore(15);
             this.particles.createExplosion(targetPos, 45, true);
             sound.playExplosion();
+            this.spawnScorePopup(targetPos, CONFIG.SCORE.KILL_BOSS_CORE, 'CORE HIT');
           } else {
             this.scene.remove(m.target.mesh);
             this.particles.createExplosion(targetPos, 32);
             sound.playExplosion();
+            this.spawnScorePopup(targetPos, CONFIG.SCORE.KILL_AIR, state.comboCount > 1 ? `x${state.comboCount} COMBO` : '');
           }
 
           state.addScore(CONFIG.SCORE.KILL_AIR);
@@ -578,6 +580,7 @@ export class CombatSystem {
 
           this.particles.createExplosion(en.mesh.position, 28);
           sound.playExplosion();
+          this.spawnScorePopup(en.mesh.position, CONFIG.SCORE.KILL_VULCAN, 'GUN KILL');
           state.addScore(CONFIG.SCORE.KILL_VULCAN);
           state.registerKill(state.isClimax);
           b.life = 0;
@@ -602,6 +605,24 @@ export class CombatSystem {
         this.playerBullets.splice(i, 1);
       }
     }
+  }
+
+  spawnScorePopup(worldPos, points, label = '') {
+    if (typeof document === 'undefined') return;
+    const screenPos = worldPos.clone().project(this.camera);
+    if (screenPos.z > 1.0) return; // behind camera
+
+    const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(screenPos.y * 0.5) + 0.5) * window.innerHeight;
+
+    const el = document.createElement('div');
+    el.className = 'arcade-score-popup';
+    el.innerHTML = `<span style="color:#ffe600; font-weight:900;">+${points}</span> ${label ? `<span style="color:#00ffff; font-size:14px; margin-left:6px;">${label}</span>` : ''}`;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    document.body.appendChild(el);
+
+    setTimeout(() => el.remove(), 850);
   }
 
   clear() {
