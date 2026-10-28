@@ -342,10 +342,12 @@ export class CombatSystem {
 
           if (m.target.isBossCore && boss) {
             boss.damageCore(15);
-            this.particles.createExplosion(targetPos, 40, true);
+            this.particles.createExplosion(targetPos, 45, true);
+            sound.playExplosion();
           } else {
             this.scene.remove(m.target.mesh);
-            this.particles.createExplosion(targetPos, 30);
+            this.particles.createExplosion(targetPos, 32);
+            sound.playExplosion();
           }
 
           state.addScore(CONFIG.SCORE.KILL_AIR);
@@ -574,7 +576,8 @@ export class CombatSystem {
           const domBox = this.lockBoxes.get(en.id);
           if (domBox) { domBox.remove(); this.lockBoxes.delete(en.id); }
 
-          this.particles.createExplosion(en.mesh.position, 22);
+          this.particles.createExplosion(en.mesh.position, 28);
+          sound.playExplosion();
           state.addScore(CONFIG.SCORE.KILL_VULCAN);
           state.registerKill(state.isClimax);
           b.life = 0;

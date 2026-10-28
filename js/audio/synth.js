@@ -289,17 +289,41 @@ export class RetroSoundEngine {
 
   playExplosion() {
     if (!this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(95, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.45);
-    gain.gain.setValueAtTime(0.38, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.45);
+    const now = this.ctx.currentTime;
+
+    // 1. Heavy Sub-Bass Boom (Visceral Thud)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(120, now);
+    subOsc.frequency.exponentialRampToValueAtTime(18, now + 0.55);
+    subGain.gain.setValueAtTime(0.65, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    subOsc.connect(subGain);
+    subGain.connect(this.masterGain);
+    subOsc.start(now);
+    subOsc.stop(now + 0.55);
+
+    // 2. Roaring Lowpass-Filtered Noise Crunch (Fireball detonation blast)
+    if (this.noiseBuffer) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = this.noiseBuffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1800, now);
+      filter.frequency.exponentialRampToValueAtTime(160, now + 0.65);
+      filter.Q.value = 3.5;
+
+      const nGain = this.ctx.createGain();
+      nGain.gain.setValueAtTime(0.68, now);
+      nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+      noise.connect(filter);
+      filter.connect(nGain);
+      nGain.connect(this.masterGain);
+      noise.start(now);
+      noise.stop(now + 0.65);
+    }
   }
 
   playClimaxTrigger() {
