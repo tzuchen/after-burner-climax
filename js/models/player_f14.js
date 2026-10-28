@@ -1,6 +1,7 @@
 /* ============================================================
    AFTER BURNER CLIMAX - F-14 TOMCAT FIGHTER MODEL
-   Dynamic Variable-Sweep Wings, Cockpit Interior, Vortex Trails
+   High-Fidelity Aerodynamics, Dynamic Variable-Sweep Wings,
+   Tandem Martin-Baker Mk.14 Seats, Slime Lights & Shock Diamonds
    ============================================================ */
 
 import { createNavalCamoTexture, createCockpitInstrumentsTexture } from './textures.js';
@@ -17,19 +18,19 @@ export class PlayerF14 {
 
     this.skinMat = new THREE.MeshStandardMaterial({
       map: this.skinTex,
-      roughness: 0.35,
-      metalness: 0.65
+      roughness: 0.32,
+      metalness: 0.68
     });
 
     this.darkMat = new THREE.MeshStandardMaterial({
-      color: 0x1f262e,
-      roughness: 0.4,
-      metalness: 0.8
+      color: 0x1a1f26,
+      roughness: 0.35,
+      metalness: 0.85
     });
 
-    this.nozzleMat = new THREE.MeshStandardMaterial({
-      color: 0x141518,
-      roughness: 0.25,
+    this.titaniumNozzleMat = new THREE.MeshStandardMaterial({
+      color: 0x22262d,
+      roughness: 0.2,
       metalness: 0.95
     });
 
@@ -41,8 +42,22 @@ export class PlayerF14 {
       opacity: 0.78
     });
 
-    this.pilotHelmetMat = new THREE.MeshStandardMaterial({ color: 0x224433, roughness: 0.3, metalness: 0.5 });
+    this.pilotHelmetMat = new THREE.MeshStandardMaterial({ color: 0x243b2a, roughness: 0.3, metalness: 0.5 });
     this.visorMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+
+    // Luminescent Formation Slime Light Material (Radioactive Lime Green)
+    this.slimeLightMat = new THREE.MeshBasicMaterial({ color: 0x44ff44 });
+
+    // Ejection seat materials
+    this.seatMat = new THREE.MeshStandardMaterial({ color: 0x2d3a2f, roughness: 0.7, metalness: 0.2 });
+    this.seatHandleMat = new THREE.MeshBasicMaterial({ color: 0xffbb00 });
+
+    // Supersonic Shock Diamond Material
+    this.shockDiamondMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.92
+    });
 
     // Components & Articulations
     this.parts = {
@@ -56,6 +71,8 @@ export class PlayerF14 {
       rightFlame: null,
       leftCoreFlame: null,
       rightCoreFlame: null,
+      leftShockDiamonds: [],
+      rightShockDiamonds: [],
       cockpitInterior: null,
       currentSweep: 0.22,
       vortexTrails: []
@@ -66,19 +83,30 @@ export class PlayerF14 {
   }
 
   build() {
-    // 1. Nose & Radome
-    const noseGeo = new THREE.ConeGeometry(1.4, 9.5, 16);
+    // 1. Aerodynamic Nose & Radome
+    const noseGeo = new THREE.ConeGeometry(1.4, 9.8, 20);
     noseGeo.rotateX(Math.PI / 2);
     const nose = new THREE.Mesh(noseGeo, this.skinMat);
-    nose.position.set(0, 0, -8.5);
+    nose.position.set(0, 0, -8.6);
     this.group.add(nose);
 
-    // Pitot Probe
-    const pitotGeo = new THREE.CylinderGeometry(0.04, 0.04, 3.8, 6);
+    // Pitot Probe (Long airspeed probe at tip of radome)
+    const pitotGeo = new THREE.CylinderGeometry(0.04, 0.04, 4.2, 8);
     pitotGeo.rotateX(Math.PI / 2);
     const pitot = new THREE.Mesh(pitotGeo, this.darkMat);
-    pitot.position.set(0, 0, -14.5);
+    pitot.position.set(0, 0, -14.8);
     this.group.add(pitot);
+
+    // F-14D Dual Chin Pod (TCS Optical Camera & IRST Sensor) Under Radome
+    const chinPodGeo = new THREE.CylinderGeometry(0.35, 0.32, 2.6, 12);
+    chinPodGeo.rotateX(Math.PI / 2);
+    const chinPod = new THREE.Mesh(chinPodGeo, this.darkMat);
+    chinPod.position.set(0, -1.0, -8.2);
+    this.group.add(chinPod);
+
+    const chinSensorLens = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), this.visorMat);
+    chinSensorLens.position.set(0, -1.0, -9.6);
+    this.group.add(chinSensorLens);
 
     // 2. Center Fuselage & Pancake Tunnel
     const bodyGeo = new THREE.BoxGeometry(4.8, 1.6, 12);
@@ -86,8 +114,8 @@ export class PlayerF14 {
     body.position.set(0, 0, -0.5);
     this.group.add(body);
 
-    // Blended Wing Glove Fairings (LERX)
-    const gloveLGeo = new THREE.BoxGeometry(1.6, 0.5, 8);
+    // Blended Wing Glove Fairings (Leading-Edge Glove LERX)
+    const gloveLGeo = new THREE.BoxGeometry(1.7, 0.5, 8.2);
     const gloveL = new THREE.Mesh(gloveLGeo, this.skinMat);
     gloveL.position.set(-2.8, 0.1, -2.5);
     this.group.add(gloveL);
@@ -96,8 +124,8 @@ export class PlayerF14 {
     gloveR.position.x = 2.8;
     this.group.add(gloveR);
 
-    // 3. Underslung Dual Rectangular Air Intakes
-    const intakeGeo = new THREE.BoxGeometry(1.5, 1.2, 7);
+    // 3. Underslung Dual Rectangular Air Intakes with Internal Ramps
+    const intakeGeo = new THREE.BoxGeometry(1.5, 1.25, 7.2);
     const leftIntake = new THREE.Mesh(intakeGeo, this.darkMat);
     leftIntake.position.set(-1.8, -0.9, -1.8);
     this.group.add(leftIntake);
@@ -106,34 +134,56 @@ export class PlayerF14 {
     rightIntake.position.x = 1.8;
     this.group.add(rightIntake);
 
-    // 4. Tandem Cockpit & Pilots
+    // 4. Belly Pallets (4x Semi-Submerged AIM-54 Phoenix Missile Pallets)
+    const palletGeo = new THREE.BoxGeometry(0.85, 0.45, 6.0);
+    [-0.9, 0.9].forEach(ox => {
+      const pallet = new THREE.Mesh(palletGeo, this.darkMat);
+      pallet.position.set(ox, -0.9, 0.5);
+      this.group.add(pallet);
+    });
+
+    // 5. Tandem Cockpit & Pilots (Martin-Baker Mk.14 Ejection Seats)
     const canopyGeo = new THREE.SphereGeometry(1.15, 20, 16);
     canopyGeo.scale(0.85, 1.15, 3.8);
     const canopy = new THREE.Mesh(canopyGeo, this.canopyMat);
     canopy.position.set(0, 1.15, -3.2);
     this.group.add(canopy);
 
-    // Canopy Frame
-    const frameGeo = new THREE.TorusGeometry(0.95, 0.06, 8, 16, Math.PI);
+    // Canopy Windshield Arch Frame
+    const frameGeo = new THREE.TorusGeometry(0.95, 0.06, 8, 20, Math.PI);
     frameGeo.rotateY(Math.PI / 2);
     const frame = new THREE.Mesh(frameGeo, this.darkMat);
     frame.position.set(0, 0.8, -3.2);
     this.group.add(frame);
 
-    // Pilots
+    // Ejection Seats (Pilot & RIO)
+    const seatGeo = new THREE.BoxGeometry(0.65, 1.1, 0.65);
+    const seatHandleGeo = new THREE.TorusGeometry(0.12, 0.03, 6, 12, Math.PI);
+    seatHandleGeo.rotateX(-Math.PI / 2);
+
+    // Pilot (Front Seat)
+    const seatF = new THREE.Mesh(seatGeo, this.seatMat);
+    seatF.position.set(0, 0.55, -4.0);
+    const handleF = new THREE.Mesh(seatHandleGeo, this.seatHandleMat);
+    handleF.position.set(0, 1.15, -4.0);
     const pilotHead = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 10), this.pilotHelmetMat);
     pilotHead.position.set(0, 0.82, -4.2);
     const visorF = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.14, 0.15), this.visorMat);
     visorF.position.set(0, 0.86, -4.5);
-    this.group.add(pilotHead); this.group.add(visorF);
+    this.group.add(seatF); this.group.add(handleF); this.group.add(pilotHead); this.group.add(visorF);
 
+    // RIO (Radar Intercept Officer - Rear Seat)
+    const seatB = new THREE.Mesh(seatGeo, this.seatMat);
+    seatB.position.set(0, 0.68, -2.0);
+    const handleB = new THREE.Mesh(seatHandleGeo, this.seatHandleMat);
+    handleB.position.set(0, 1.28, -2.0);
     const rioHead = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 10), this.pilotHelmetMat);
     rioHead.position.set(0, 0.95, -2.2);
     const visorB = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.14, 0.15), this.visorMat);
     visorB.position.set(0, 0.99, -2.5);
-    this.group.add(rioHead); this.group.add(visorB);
+    this.group.add(seatB); this.group.add(handleB); this.group.add(rioHead); this.group.add(visorB);
 
-    // 5. Cockpit Interior Panel (Visible in 1st Person Mode)
+    // Cockpit Interior Panel (Visible in 1st Person / Cockpit View)
     const panelGeo = new THREE.PlaneGeometry(2.2, 1.1);
     const panelMat = new THREE.MeshBasicMaterial({ map: this.cockpitTex, transparent: true });
     const cockpitPanel = new THREE.Mesh(panelGeo, panelMat);
@@ -142,8 +192,8 @@ export class PlayerF14 {
     this.group.add(cockpitPanel);
     this.parts.cockpitInterior = cockpitPanel;
 
-    // 6. Twin Engine Nacelles & Ventral Fins
-    const nacelleGeo = new THREE.CylinderGeometry(1.18, 1.12, 10, 16);
+    // 6. Twin Engine Nacelles & Ventral Strakes
+    const nacelleGeo = new THREE.CylinderGeometry(1.18, 1.12, 10, 18);
     nacelleGeo.rotateX(Math.PI / 2);
     const leftNacelle = new THREE.Mesh(nacelleGeo, this.skinMat);
     leftNacelle.position.set(-2.2, -0.2, 4.2);
@@ -153,7 +203,7 @@ export class PlayerF14 {
     rightNacelle.position.x = 2.2;
     this.group.add(rightNacelle);
 
-    const vFinGeo = new THREE.BoxGeometry(0.18, 1.4, 4);
+    const vFinGeo = new THREE.BoxGeometry(0.18, 1.4, 4.2);
     const leftVFin = new THREE.Mesh(vFinGeo, this.darkMat);
     leftVFin.position.set(-2.2, -1.2, 5.5);
     leftVFin.rotation.z = -0.15;
@@ -163,10 +213,10 @@ export class PlayerF14 {
     rightVFin.position.x = 2.2; rightVFin.rotation.z = 0.15;
     this.group.add(rightVFin);
 
-    // 7. Titanium Exhaust Nozzles & Multistage Afterburners
-    const nozzleGeo = new THREE.CylinderGeometry(1.22, 1.25, 2.2, 16);
+    // 7. Titanium Exhaust Nozzles & Variable Petals
+    const nozzleGeo = new THREE.CylinderGeometry(1.22, 1.25, 2.4, 20);
     nozzleGeo.rotateX(Math.PI / 2);
-    const leftNozzle = new THREE.Mesh(nozzleGeo, this.nozzleMat);
+    const leftNozzle = new THREE.Mesh(nozzleGeo, this.titaniumNozzleMat);
     leftNozzle.position.set(-2.2, -0.2, 9.8);
     this.group.add(leftNozzle);
 
@@ -174,6 +224,7 @@ export class PlayerF14 {
     rightNozzle.position.x = 2.2;
     this.group.add(rightNozzle);
 
+    // Multistage Afterburner Plumes
     const flameOuterGeo = new THREE.ConeGeometry(1.15, 14, 16);
     flameOuterGeo.rotateX(-Math.PI / 2);
     const flameOuterMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.85 });
@@ -198,7 +249,23 @@ export class PlayerF14 {
     this.parts.rightCoreFlame.position.set(2.2, -0.2, 13);
     this.group.add(this.parts.rightCoreFlame);
 
-    // 8. DYNAMIC VARIABLE-SWEEP MAIN WINGS (可變後掠翼組件)
+    // Supersonic Shock Diamonds (Stacked Luminous Diamonds in Exhaust)
+    const diamondGeo = new THREE.OctahedronGeometry(0.38, 0);
+    for (let d = 0; d < 3; d++) {
+      const zOffset = 11.8 + d * 2.8;
+
+      const diamondL = new THREE.Mesh(diamondGeo, this.shockDiamondMat);
+      diamondL.position.set(-2.2, -0.2, zOffset);
+      this.group.add(diamondL);
+      this.parts.leftShockDiamonds.push(diamondL);
+
+      const diamondR = new THREE.Mesh(diamondGeo, this.shockDiamondMat);
+      diamondR.position.set(2.2, -0.2, zOffset);
+      this.group.add(diamondR);
+      this.parts.rightShockDiamonds.push(diamondR);
+    }
+
+    // 8. DYNAMIC VARIABLE-SWEEP MAIN WINGS (20° Forward to 68° Oversweep)
     const leftPivot = new THREE.Group();
     leftPivot.position.set(-2.3, 0.2, 0.5);
     this.group.add(leftPivot);
@@ -208,7 +275,7 @@ export class PlayerF14 {
     const leftBlade = new THREE.Mesh(wingBladeGeo, this.skinMat);
     leftPivot.add(leftBlade);
 
-    // Wingtip Missile Rail + AIM-9 Sidewinder
+    // Wingtip Missile Rail + AIM-9M Sidewinder
     const mRailGeo = new THREE.BoxGeometry(0.3, 0.3, 4.5);
     const leftRail = new THREE.Mesh(mRailGeo, this.darkMat);
     leftRail.position.set(-11.1, 0, 0.8);
@@ -220,8 +287,15 @@ export class PlayerF14 {
     leftMissile.position.set(-11.1, -0.25, 0.8);
     leftPivot.add(leftMissile);
 
+    // Wingtip Slime Light (Luminescent strip)
+    const wingtipSlimeGeo = new THREE.BoxGeometry(0.1, 0.12, 1.4);
+    const slimeL = new THREE.Mesh(wingtipSlimeGeo, this.slimeLightMat);
+    slimeL.position.set(-11.15, 0.15, 0.8);
+    leftPivot.add(slimeL);
+
     this.parts.leftWing = leftPivot;
 
+    // Right Wing Assembly
     const rightPivot = new THREE.Group();
     rightPivot.position.set(2.3, 0.2, 0.5);
     this.group.add(rightPivot);
@@ -239,9 +313,13 @@ export class PlayerF14 {
     rightMissile.position.x = 11.1;
     rightPivot.add(rightMissile);
 
+    const slimeR = new THREE.Mesh(wingtipSlimeGeo, this.slimeLightMat);
+    slimeR.position.set(11.15, 0.15, 0.8);
+    rightPivot.add(slimeR);
+
     this.parts.rightWing = rightPivot;
 
-    // 9. All-Moving Horizontal Stabilators (全動平尾)
+    // 9. All-Moving Horizontal Stabilators
     const stabGeo = new THREE.BoxGeometry(4.6, 0.18, 3.8);
     const leftStab = new THREE.Mesh(stabGeo, this.skinMat);
     leftStab.position.set(-3.6, -0.1, 9.2);
@@ -253,20 +331,29 @@ export class PlayerF14 {
     this.group.add(rightStab);
     this.parts.rightStab = rightStab;
 
-    // 10. Twin Cant-Angle Vertical Stabilizers
+    // 10. Twin Cant-Angle Vertical Stabilizers & Slime Lights
     const finGeo = new THREE.BoxGeometry(0.24, 4.8, 5.2);
     const leftFin = new THREE.Mesh(finGeo, this.skinMat);
     leftFin.position.set(-2.4, 2.3, 7.2);
     leftFin.rotation.z = 0.12;
     this.group.add(leftFin);
 
+    const finSlimeL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.2), this.slimeLightMat);
+    finSlimeL.position.set(-2.55, 3.2, 7.2);
+    finSlimeL.rotation.z = 0.12;
+    this.group.add(finSlimeL);
+
     const rightFin = leftFin.clone();
     rightFin.position.x = 2.4; rightFin.rotation.z = -0.12;
     this.group.add(rightFin);
+
+    const finSlimeR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.2), this.slimeLightMat);
+    finSlimeR.position.set(2.55, 3.2, 7.2);
+    finSlimeR.rotation.z = -0.12;
+    this.group.add(finSlimeR);
   }
 
   initVortexTrails() {
-    // 3D Contrail Ribbon Points for Left & Right Wingtips
     const TRAIL_LENGTH = 16;
     this.trailPointsL = [];
     this.trailPointsR = [];
@@ -322,6 +409,17 @@ export class PlayerF14 {
       this.parts.rightCoreFlame.scale.set(1, coreScale, 1);
       this.parts.leftCoreFlame.material.color.setHex(state.isAfterburner ? 0xffeeaa : 0xffffff);
       this.parts.rightCoreFlame.material.color.setHex(state.isAfterburner ? 0xffeeaa : 0xffffff);
+
+      // Pulse Shock Diamonds when supersonic
+      const diamondScale = state.isAfterburner ? (1.0 + Math.sin(now * 0.1) * 0.3) : 0.4;
+      this.parts.leftShockDiamonds.forEach(sd => {
+        sd.scale.set(diamondScale, diamondScale, diamondScale);
+        sd.visible = state.isAfterburner || state.isClimax;
+      });
+      this.parts.rightShockDiamonds.forEach(sd => {
+        sd.scale.set(diamondScale, diamondScale, diamondScale);
+        sd.visible = state.isAfterburner || state.isClimax;
+      });
     }
 
     // 4. Update Wingtip Contrail Vortices
