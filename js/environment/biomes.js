@@ -414,23 +414,6 @@ export class BiomeController {
     this.clouds.setBiomeTheme(stageConfig.biome);
   }
 
-    // Ground Color
-    this.oceanMat.color.setHex(stageConfig.waterColor);
-
-    // Canyon activation
-    this.canyon.setActive(stageConfig.hasCanyon && stageConfig.biome === 'DESERT_CANYON');
-
-    // 3D Procedural Terrain activation
-    this.fractalTerrain.setBiome(stageConfig.biome);
-    this.terrain3D.setBiome(stageConfig.biome);
-
-    // Weather activation
-    this.weather.setWeather(stageConfig.biome);
-
-    // Cloud tinting
-    this.clouds.setBiomeTheme(stageConfig.biome);
-  }
-
   update(dt, forwardSpeed, isAfterburner, isClimax, playerPos, onThreadNeedle) {
     const scrollAmount = (forwardSpeed * dt) * 0.00035;
 

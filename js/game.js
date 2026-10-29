@@ -209,6 +209,11 @@ class GameApp {
       overlay.addEventListener('touchend', handleEnterHangar, { passive: false });
     }
 
+    // Global window click/touch fallback for title screen
+    window.addEventListener('click', () => {
+      if (state.inTitle) this.enterHangar();
+    });
+
     const handlePrev = (e) => {
       if (e) {
         e.preventDefault();

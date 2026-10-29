@@ -37,12 +37,10 @@ export class InputManager {
       const k = e.key.toLowerCase();
       this.keys[k] = true;
 
-      // 1. Title screen shortcut: Space or Enter enters the 3D Hangar
+      // 1. Title screen shortcut: Any key enters the 3D Hangar (PRESS ANY KEY)
       if (state.inTitle) {
-        if (e.code === 'Space' || e.code === 'Enter') {
-          if (this.callbacks.onEnterHangar) this.callbacks.onEnterHangar();
-          return;
-        }
+        if (this.callbacks.onEnterHangar) this.callbacks.onEnterHangar();
+        return;
       }
 
       // 2. Hangar selection shortcuts
