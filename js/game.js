@@ -76,7 +76,7 @@ class GameApp {
     window.addEventListener('resize', () => this.onResize());
 
     // Apply Stage 1 Initial Environment & Show Hangar Turntable
-    this.biomes.applyStageTheme(state.getCurrentStage());
+    this.biomes.applyStageTheme(state.getCurrentStage(), this.sunLight, this.ambientLight);
     this.hangar.show(this.player);
 
     // Preload Path A authentic 3D Polygonal Models (GLTF)
@@ -634,7 +634,7 @@ class GameApp {
       if (this.refuelTimer <= 0) {
         this.isRefueling = false;
         this.tanker.endSequence();
-        this.biomes.applyStageTheme(state.getCurrentStage());
+        this.biomes.applyStageTheme(state.getCurrentStage(), this.sunLight, this.ambientLight);
         music.playTrack(state.getCurrentStage().bgmTrack);
         radio.speak(`Entering ${state.getCurrentStage().name}! Stay sharp!`, "AWACS OVERSIGHT", true);
       }

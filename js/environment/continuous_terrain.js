@@ -76,7 +76,7 @@ export class ContinuousFractalTerrain {
     this.scene.add(this.group);
 
     this.noise = new FastPerlin2D();
-    this.currentBiome = 'OCEAN_SUNSET';
+    this.currentBiome = 'OCEAN_BLUESKY';
 
     // Terrain Mesh Dimensions
     this.chunkWidth = 4200;
@@ -174,7 +174,7 @@ export class ContinuousFractalTerrain {
     const distFromCenter = Math.abs(worldX);
     const baseWaterLevel = -58.0;
 
-    if (biome === 'OCEAN_SUNSET') {
+    if (biome === 'OCEAN_BLUESKY' || biome === 'OCEAN_SUNSET') {
       // Ocean Stage: Vast sparkling ocean in center with dramatic coastal sea stacks and mountain headlands on flanks
       if (distFromCenter < 550) {
         // Flat ocean flight corridor

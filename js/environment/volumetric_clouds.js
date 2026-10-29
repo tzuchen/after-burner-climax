@@ -71,7 +71,13 @@ export class CloudSystem {
   }
 
   setBiomeTheme(theme) {
-    if (theme === 'STRATOSPHERE_NIGHT') {
+    if (theme === 'OCEAN_BLUESKY') {
+      // Clear Blue Sky & Pure White Clouds (晴空萬里，藍天白雲)
+      this.clouds.forEach(c => {
+        c.material.color.setHex(0xffffff);
+        c.material.opacity = 0.88;
+      });
+    } else if (theme === 'STRATOSPHERE_NIGHT') {
       this.clouds.forEach(c => {
         c.material.color.setHex(0x354b6e);
         c.material.opacity = 0.5;

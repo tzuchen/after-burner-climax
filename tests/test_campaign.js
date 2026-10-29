@@ -13,6 +13,12 @@ export function runCampaignTests() {
     throw new Error(`Expected 6 campaign stages, got ${CONFIG.STAGES ? CONFIG.STAGES.length : 0}`);
   }
 
+  // 1b. Verify Stage 1 Clear Blue Sky ("晴空萬里，藍天白雲")
+  const stage1 = CONFIG.STAGES[0];
+  if (stage1.biome !== 'OCEAN_BLUESKY' || stage1.code !== 'STAGE_1') {
+    throw new Error(`Stage 1 must be configured as clear blue sky OCEAN_BLUESKY, got: ${stage1.biome}`);
+  }
+
   // 2. Verify Final Boss Stage
   const bossStage = CONFIG.STAGES[5];
   if (!bossStage.bossStage || bossStage.code !== 'STAGE_4_BOSS') {

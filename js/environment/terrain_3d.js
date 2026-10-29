@@ -9,7 +9,7 @@ export class Advanced3DTerrainEngine {
     this.group = new THREE.Group();
     this.scene.add(this.group);
 
-    this.currentBiome = 'OCEAN_SUNSET';
+    this.currentBiome = 'OCEAN_BLUESKY';
     this.terrainObjects = [];
 
     // 1. Procedural Window Grid Canvas Texture for Cyber Skyscrapers
