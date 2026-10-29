@@ -32,6 +32,7 @@ export class ParticleEngine {
     // Base Smoke Sprite Materials
     this.smokeMat = new THREE.SpriteMaterial({
       map: this.smokeTex,
+      color: 0x444444,
       transparent: true,
       opacity: 0.78,
       depthWrite: false,
@@ -40,8 +41,9 @@ export class ParticleEngine {
 
     this.heavySmokeMat = new THREE.SpriteMaterial({
       map: this.heavySmokeTex,
+      color: 0x222222,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.90,
       depthWrite: false,
       fog: true
     });
@@ -83,7 +85,6 @@ export class ParticleEngine {
 
     // Draw irregular clustered organic lobes with feathered gradients
     const lobeCount = isHeavy ? 16 : 10;
-    const baseColor = isHeavy ? 28 : 50;
 
     for (let i = 0; i < lobeCount; i++) {
       const angle = (i / lobeCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.45;
@@ -93,12 +94,13 @@ export class ParticleEngine {
       const radius = isHeavy ? (48 + Math.random() * 46) : (38 + Math.random() * 38);
 
       const grad = ctx.createRadialGradient(lx, ly, radius * 0.08, lx, ly, radius);
-      const alpha = isHeavy ? (0.68 + Math.random() * 0.22) : (0.48 + Math.random() * 0.24);
+      const alpha = isHeavy ? (0.75 + Math.random() * 0.22) : (0.55 + Math.random() * 0.25);
 
-      grad.addColorStop(0, `rgba(${baseColor}, ${baseColor}, ${baseColor}, ${alpha.toFixed(2)})`);
-      grad.addColorStop(0.45, `rgba(${baseColor + 14}, ${baseColor + 14}, ${baseColor + 14}, ${(alpha * 0.68).toFixed(2)})`);
-      grad.addColorStop(0.82, `rgba(${baseColor + 28}, ${baseColor + 28}, ${baseColor + 28}, ${(alpha * 0.22).toFixed(2)})`);
-      grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+      // Render white feathered lobes so material tinting (color.setHex) works accurately across white/dark/crimson
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha.toFixed(2)})`);
+      grad.addColorStop(0.45, `rgba(255, 255, 255, ${(alpha * 0.72).toFixed(2)})`);
+      grad.addColorStop(0.82, `rgba(255, 255, 255, ${(alpha * 0.25).toFixed(2)})`);
+      grad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
 
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -484,9 +486,7 @@ export class ParticleEngine {
     const baseMat = isDense ? this.heavySmokeMat : this.smokeMat;
     const mat = baseMat ? baseMat.clone() : new THREE.SpriteMaterial({ transparent: true, opacity: 0.75 });
 
-    if (color !== 0x333333) {
-      mat.color.setHex(color);
-    }
+    mat.color.setHex(color);
 
     const sprite = new THREE.Sprite(mat);
     sprite.position.copy(pos);
@@ -510,7 +510,7 @@ export class ParticleEngine {
       vel: vel,
       growth: isDense ? (1.8 + Math.random() * 1.2) : (1.3 + Math.random() * 0.8),
       rotVel: (Math.random() - 0.5) * 1.2,
-      initialOpacity: isDense ? 0.88 : 0.68,
+      initialOpacity: isDense ? 0.94 : 0.76,
       life: maxLife,
       maxLife: maxLife
     });

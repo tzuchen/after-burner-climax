@@ -44,16 +44,17 @@ export class CombatSystem {
     state.missiles--;
 
     const mesh = createPlayerMissileMesh();
-    const side = (this.playerMissiles.length % 2 === 0) ? -5.5 : 5.5;
-    mesh.position.set(playerGroup.position.x + side, playerGroup.position.y - 0.5, playerGroup.position.z + 1.5);
+    const side = (this.playerMissiles.length % 2 === 0) ? -6.5 : 6.5;
+    mesh.position.set(playerGroup.position.x + side, playerGroup.position.y - 0.8, playerGroup.position.z + 1.2);
     this.scene.add(mesh);
 
     this.playerMissiles.push({
       mesh: mesh,
       target: target,
-      velocity: new THREE.Vector3(side * 0.4, -3, -190),
-      life: 2.8,
-      smokeTimer: 0
+      velocity: new THREE.Vector3(side * 0.4, -4, -220),
+      life: 3.2,
+      smokeTimer: 0,
+      smokeStep: 0
     });
 
     sound.playMissileLaunch();
@@ -241,7 +242,8 @@ export class CombatSystem {
       mesh: mesh,
       velocity: initialVel,
       life: 5.0,
-      smokeTimer: 0
+      smokeTimer: 0,
+      smokeStep: 0
     });
 
     sound.playMissileAlert();
@@ -435,11 +437,19 @@ export class CombatSystem {
       m.mesh.position.addScaledVector(m.velocity, dt);
       m.mesh.lookAt(m.mesh.position.clone().add(m.velocity));
 
-      // Smoke trail
+      // Dense, brilliant white corkscrewing smoke trail
       m.smokeTimer += dt;
-      if (m.smokeTimer > 0.035) {
+      if (m.smokeTimer >= 0.018) {
         m.smokeTimer = 0;
-        this.particles.createSmokePuff(m.mesh.position, 0xcccccc);
+        m.smokeStep = (m.smokeStep || 0) + 1;
+        const angle = m.smokeStep * 0.85;
+        const corkscrewRadius = 1.6;
+        const puffPos = m.mesh.position.clone();
+        puffPos.x += Math.cos(angle) * corkscrewRadius;
+        puffPos.y += Math.sin(angle) * corkscrewRadius;
+        const puffSize = m.isHeavyPhoenix ? (36 + Math.random() * 10) : (28 + Math.random() * 8);
+        const puffColor = m.isHeavyPhoenix ? 0xd8f4ff : 0xffffff;
+        this.particles.createSmokePuff(puffPos, puffColor, puffSize, true);
       }
 
       // Hit Collision check
@@ -447,7 +457,7 @@ export class CombatSystem {
       if (m.target && m.target.alive) {
         const targetPos = new THREE.Vector3();
         m.target.mesh.getWorldPosition(targetPos);
-        if (m.mesh.position.distanceTo(targetPos) < 28) {
+        if (m.mesh.position.distanceTo(targetPos) < 34) {
           hit = true;
 
           // Unlock and remove lock box immediately
@@ -524,11 +534,13 @@ export class CombatSystem {
       em.mesh.position.addScaledVector(em.velocity, dt);
       em.mesh.lookAt(em.mesh.position.clone().add(em.velocity));
 
-      // Smoke trail
+      // Smoke trail: Dense crimson / decoy-amber trail
       em.smokeTimer += dt;
-      if (em.smokeTimer > 0.035) {
+      if (em.smokeTimer >= 0.022) {
         em.smokeTimer = 0;
-        this.particles.createSmokePuff(em.mesh.position, em.decoyed ? 0xffaa00 : 0xff2222);
+        em.smokeStep = (em.smokeStep || 0) + 1;
+        const puffColor = em.decoyed ? 0xffaa00 : 0xff2222;
+        this.particles.createSmokePuff(em.mesh.position, puffColor, 26 + Math.random() * 6, true);
       }
 
       // Proximity & Evasion Check
@@ -724,9 +736,9 @@ export class CombatSystem {
       b.mesh.position.z += b.zSpeed * dt;
       b.life -= dt;
 
-      // Check collision with normal enemies
+      // Check collision with normal enemies (adjusted for 2.35x enlarged fighter scale)
       enemies.forEach(en => {
-        if (en.alive && b.mesh.position.distanceTo(en.mesh.position) < 20) {
+        if (en.alive && b.mesh.position.distanceTo(en.mesh.position) < 26) {
           en.alive = false;
           this.scene.remove(en.mesh);
           const domBox = this.lockBoxes.get(en.id);

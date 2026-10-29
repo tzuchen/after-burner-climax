@@ -50,12 +50,12 @@ export class GLTFModelManager {
       },
       SU27: {
         path: 'assets/models/su27s.glb',
-        scale: 1.05,
+        scale: 2.35, // Scaled from 1.05 to 2.35 for authentic arcade prominence & visibility
         rotY: Math.PI, // Face toward player (+Z) for enemy interception!
         rotX: 0,
         offsetY: 0,
         offsetZ: 0,
-        exhaustOffsets: [[-1.8, -0.3, -8.5], [1.8, -0.3, -8.5]]
+        exhaustOffsets: [[-4.2, -0.7, -20.0], [4.2, -0.7, -20.0]]
       }
     };
   }

@@ -23,93 +23,130 @@ function getMaterials() {
 }
 
 export function buildSu27Mesh() {
-  // 1. High-Quality 3D Polygonal Mesh (Path A)
+  // 1. High-Quality 3D Polygonal Mesh (Path A) - Scaled 2.35x for arcade prominence
   if (modelManager && modelManager.hasModel('SU27')) {
     const eGroup = new THREE.Group();
     const model = modelManager.getModel('SU27');
     eGroup.add(model);
 
-    // Glowing Russian Afterburner Exhaust Plumes
-    [-1.8, 1.8].forEach(ox => {
-      const exhaust = new THREE.Mesh(
-        new THREE.ConeGeometry(0.85, 6.5, 12).rotateX(Math.PI / 2),
+    // Dynamic Afterburner Firelight
+    const abLight = new THREE.PointLight(0xff4400, 2.8, 60);
+    abLight.position.set(0, -0.7, -20.5);
+    eGroup.add(abLight);
+
+    // Glowing Russian Aggressor Twin Afterburner Exhaust Plumes (2.35x arcade scaled)
+    [-4.2, 4.2].forEach(ox => {
+      // Outer fiery orange-red afterburner jet flame
+      const outerFl = new THREE.Mesh(
+        new THREE.ConeGeometry(2.0, 18, 16).rotateX(Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 })
       );
-      exhaust.position.set(ox, -0.4, -9.8);
-      eGroup.add(exhaust);
+      outerFl.position.set(ox, -0.7, -22.0);
+      eGroup.add(outerFl);
+
+      // Inner white-hot / cyan shock core
+      const innerFl = new THREE.Mesh(
+        new THREE.ConeGeometry(0.95, 11, 12).rotateX(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98 })
+      );
+      innerFl.position.set(ox, -0.7, -18.5);
+      eGroup.add(innerFl);
+
+      // Supersonic shock diamond
+      const diamond = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.7, 0),
+        new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.90 })
+      );
+      diamond.position.set(ox, -0.7, -19.5);
+      eGroup.add(diamond);
     });
 
     return eGroup;
   }
 
-  // 2. Procedural Fallback if GLTF not loaded
+  // 2. Procedural Fallback if GLTF not loaded (2.35x scaled arcade dimensions)
   const mats = getMaterials();
   const eGroup = new THREE.Group();
 
+  // Dynamic Afterburner Point Light
+  const abLight = new THREE.PointLight(0xff4400, 2.8, 60);
+  abLight.position.set(0, -0.9, -21.0);
+  eGroup.add(abLight);
+
   // Long Pointed Drooping Nose
-  const noseGeo = new THREE.ConeGeometry(1.35, 9.2, 16).rotateX(-Math.PI / 2);
+  const noseGeo = new THREE.ConeGeometry(3.1, 21.6, 16).rotateX(-Math.PI / 2);
   const nose = new THREE.Mesh(noseGeo, mats.skinMat);
-  nose.position.set(0, -0.2, 5.5);
+  nose.position.set(0, -0.4, 12.8);
   eGroup.add(nose);
 
-  const tipGeo = new THREE.ConeGeometry(0.5, 2.2, 12).rotateX(-Math.PI / 2);
+  const tipGeo = new THREE.ConeGeometry(1.2, 5.2, 12).rotateX(-Math.PI / 2);
   const tip = new THREE.Mesh(tipGeo, mats.redMat);
-  tip.position.set(0, -0.2, 9.5);
+  tip.position.set(0, -0.4, 22.2);
   eGroup.add(tip);
 
-  const irst = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 10), mats.darkMat);
-  irst.position.set(0.35, 0.85, 3.5);
+  const irst = new THREE.Mesh(new THREE.SphereGeometry(0.75, 10, 10), mats.darkMat);
+  irst.position.set(0.8, 2.0, 8.2);
   eGroup.add(irst);
 
   // Cockpit Canopy
-  const eCanopyGeo = new THREE.SphereGeometry(1.05, 18, 14).scale(0.75, 1.0, 3.2);
+  const eCanopyGeo = new THREE.SphereGeometry(2.4, 18, 14).scale(0.75, 1.0, 3.2);
   const eCanopyMat = new THREE.MeshStandardMaterial({
     color: 0x203545, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85
   });
   const eCanopy = new THREE.Mesh(eCanopyGeo, eCanopyMat);
-  eCanopy.position.set(0, 0.8, 1.8);
+  eCanopy.position.set(0, 1.8, 4.2);
   eGroup.add(eCanopy);
 
-  // Fuselage
-  const body = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.4, 11), mats.skinMat);
+  // Fuselage Body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(9.8, 3.2, 25), mats.skinMat);
   body.position.set(0, 0, 0);
   eGroup.add(body);
 
   // Sting Tail Boom
-  const sting = new THREE.Mesh(new THREE.ConeGeometry(0.85, 6, 12).rotateX(Math.PI / 2), mats.skinMat);
-  sting.position.set(0, 0.2, -7.5);
+  const sting = new THREE.Mesh(new THREE.ConeGeometry(2.0, 14.0, 12).rotateX(Math.PI / 2), mats.skinMat);
+  sting.position.set(0, 0.5, -17.5);
   eGroup.add(sting);
 
-  // Wings
-  const wings = new THREE.Mesh(new THREE.BoxGeometry(22, 0.28, 5.5), mats.skinMat);
-  wings.position.set(0, 0, 0.5);
+  // High-Aspect Swept Wings (Wingspan ~50 units)
+  const wings = new THREE.Mesh(new THREE.BoxGeometry(50, 0.65, 12.8), mats.skinMat);
+  wings.position.set(0, 0, 1.2);
   eGroup.add(wings);
 
-  // Dual Engines & Nozzles
-  [-1.8, 1.8].forEach(ox => {
-    const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.0, 9, 16).rotateX(Math.PI / 2), mats.skinMat);
-    nacelle.position.set(ox, -0.4, -2.5);
+  // Dual Engines, Titanium Nozzles & Blazing Exhaust Plumes
+  [-4.2, 4.2].forEach(ox => {
+    const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.3, 21, 16).rotateX(Math.PI / 2), mats.skinMat);
+    nacelle.position.set(ox, -0.9, -5.8);
     eGroup.add(nacelle);
 
-    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.12, 1.8, 16).rotateX(Math.PI / 2), mats.titaniumMat);
-    nozzle.position.set(ox, -0.4, -6.8);
+    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.6, 4.2, 16).rotateX(Math.PI / 2), mats.titaniumMat);
+    nozzle.position.set(ox, -0.9, -15.8);
     eGroup.add(nozzle);
 
-    const exhaust = new THREE.Mesh(new THREE.ConeGeometry(0.85, 6.5, 12).rotateX(Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 }));
-    exhaust.position.set(ox, -0.4, -9.8);
-    eGroup.add(exhaust);
+    const outerExhaust = new THREE.Mesh(
+      new THREE.ConeGeometry(2.0, 18, 16).rotateX(Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 })
+    );
+    outerExhaust.position.set(ox, -0.9, -22.5);
+    eGroup.add(outerExhaust);
+
+    const innerExhaust = new THREE.Mesh(
+      new THREE.ConeGeometry(0.95, 11, 12).rotateX(Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98 })
+    );
+    innerExhaust.position.set(ox, -0.9, -19.0);
+    eGroup.add(innerExhaust);
   });
 
-  // Vertical Fins
-  const finGeo = new THREE.BoxGeometry(0.22, 4.2, 4.5);
+  // Twin Cantilevered Vertical Tail Fins
+  const finGeo = new THREE.BoxGeometry(0.5, 9.8, 10.5);
   const finL = new THREE.Mesh(finGeo, mats.redMat);
-  finL.position.set(-2.2, 2.0, -3.5);
+  finL.position.set(-5.2, 4.6, -8.2);
   finL.rotation.z = -0.1;
   eGroup.add(finL);
 
   const finR = finL.clone();
-  finR.position.x = 2.2; finR.rotation.z = 0.1;
+  finR.position.x = 5.2;
+  finR.rotation.z = 0.1;
   eGroup.add(finR);
 
   return eGroup;
