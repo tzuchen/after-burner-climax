@@ -72,6 +72,82 @@ export class ParticleEngine {
       fog: true,
       side: THREE.DoubleSide
     });
+
+    // --- ZERO-GC PRE-ALLOCATED EXPLOSION & DETONATION MATERIALS ---
+    this.flashMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    this.ringYellowMat = new THREE.MeshBasicMaterial({
+      color: 0xffee44,
+      transparent: true,
+      opacity: 0.90,
+      side: THREE.DoubleSide
+    });
+
+    this.ringRedMat = new THREE.MeshBasicMaterial({
+      color: 0xff3300,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide
+    });
+
+    this.coreMats = [
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0 }),
+      new THREE.MeshBasicMaterial({ color: 0xffee22, transparent: true, opacity: 1.0 }),
+      new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.95 }),
+      new THREE.MeshBasicMaterial({ color: 0xcc2200, transparent: true, opacity: 0.85 }),
+      new THREE.MeshBasicMaterial({ color: 0x441406, transparent: true, opacity: 0.70 }),
+      new THREE.MeshBasicMaterial({ color: 0x181818, transparent: true, opacity: 0.45 })
+    ];
+
+    this.lobeMats = [
+      new THREE.MeshBasicMaterial({ color: 0xffee22, transparent: true, opacity: 0.98 }),
+      new THREE.MeshBasicMaterial({ color: 0xff7700, transparent: true, opacity: 0.95 }),
+      new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.90 }),
+      new THREE.MeshBasicMaterial({ color: 0xaa1100, transparent: true, opacity: 0.80 }),
+      new THREE.MeshBasicMaterial({ color: 0x331005, transparent: true, opacity: 0.65 }),
+      new THREE.MeshBasicMaterial({ color: 0x1c1c1c, transparent: true, opacity: 0.40 })
+    ];
+
+    this.sparkYellowMat = new THREE.MeshBasicMaterial({
+      color: 0xffee33,
+      transparent: true,
+      opacity: 1.0
+    });
+
+    this.sparkOrangeMat = new THREE.MeshBasicMaterial({
+      color: 0xff3300,
+      transparent: true,
+      opacity: 1.0
+    });
+
+    // Pre-allocated Smoke Palettes with Quantized Alpha Steps (Zero runtime material allocation)
+    const levels = 8;
+    const makeSmokePalette = (tex, hex, maxOp) => {
+      const arr = [];
+      for (let i = 0; i < levels; i++) {
+        arr.push(new THREE.SpriteMaterial({
+          map: tex,
+          color: hex,
+          transparent: true,
+          opacity: ((i + 1) / levels) * maxOp,
+          depthWrite: false,
+          fog: true
+        }));
+      }
+      return arr;
+    };
+
+    this.smokePalettes = {
+      white: makeSmokePalette(this.heavySmokeTex, 0xffffff, 0.90),
+      dark: makeSmokePalette(this.heavySmokeTex, 0x222222, 0.88),
+      crimson: makeSmokePalette(this.heavySmokeTex, 0xff2222, 0.90),
+      orange: makeSmokePalette(this.smokeTex, 0xff7700, 0.85),
+      wispyDark: makeSmokePalette(this.smokeTex, 0x333333, 0.75)
+    };
   }
 
   /* --- PROCEDURAL ORGANIC SMOKE CANVAS TEXTURE --- */
@@ -286,12 +362,7 @@ export class ParticleEngine {
     const sparkCount = isBoss ? 65 : 38;
 
     // 0. Blinding White-Hot Detonation Flash Sphere
-    const flashMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.95
-    });
-    const flashMesh = new THREE.Mesh(this.coreFireGeo, flashMat);
+    const flashMesh = new THREE.Mesh(this.coreFireGeo, this.flashMat);
     flashMesh.position.copy(pos);
     flashMesh.scale.setScalar(scaleFactor * 2.8);
     this.scene.add(flashMesh);
@@ -304,18 +375,12 @@ export class ParticleEngine {
       maxLife: 0.08
     });
 
-    // 1. Concentric Shockwave Blast Rings
+    // 1. Concentric Shockwave Blast Rings (Pre-allocated materials)
     [
-      { color: 0xffee44, growth: isBoss ? 130 : 95, life: 0.42 },
-      { color: 0xff3300, growth: isBoss ? 100 : 75, life: 0.48 }
+      { mat: this.ringYellowMat, growth: isBoss ? 130 : 95, life: 0.42 },
+      { mat: this.ringRedMat, growth: isBoss ? 100 : 75, life: 0.48 }
     ].forEach((ringDef, rIdx) => {
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: ringDef.color,
-        transparent: true,
-        opacity: 0.95,
-        side: THREE.DoubleSide
-      });
-      const ring = new THREE.Mesh(this.ringGeo, ringMat);
+      const ring = new THREE.Mesh(this.ringGeo, ringDef.mat);
       ring.position.copy(pos);
       ring.lookAt(this.camera.position);
       ring.scale.setScalar(1.0 + rIdx * 0.4);
@@ -332,12 +397,7 @@ export class ParticleEngine {
     });
 
     // 2. Central Expanding Incandescent Core Fireball
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 1.0
-    });
-    const coreMesh = new THREE.Mesh(this.coreFireGeo, coreMat);
+    const coreMesh = new THREE.Mesh(this.coreFireGeo, this.coreMats[0]);
     coreMesh.position.copy(pos);
     coreMesh.scale.setScalar(scaleFactor * 0.85);
     this.scene.add(coreMesh);
@@ -354,12 +414,7 @@ export class ParticleEngine {
 
     // 3. Cluster of Billowing Volumetric Fireball Lobes
     for (let i = 0; i < lobeCount; i++) {
-      const lobeMat = new THREE.MeshBasicMaterial({
-        color: 0xffee22,
-        transparent: true,
-        opacity: 0.98
-      });
-      const lobeMesh = new THREE.Mesh(this.fireLobeGeo, lobeMat);
+      const lobeMesh = new THREE.Mesh(this.fireLobeGeo, this.lobeMats[0]);
 
       const ox = (Math.random() - 0.5) * 8 * scaleFactor;
       const oy = (Math.random() - 0.5) * 7 * scaleFactor;
@@ -443,13 +498,9 @@ export class ParticleEngine {
       });
     }
 
-    // 6. High-Velocity Sparks & Magnesium Embers
+    // 6. High-Velocity Sparks & Magnesium Embers (Pre-allocated materials)
     for (let i = 0; i < sparkCount; i++) {
-      const sparkMat = new THREE.MeshBasicMaterial({
-        color: (Math.random() > 0.3) ? 0xffee33 : 0xff3300,
-        transparent: true,
-        opacity: 1.0
-      });
+      const sparkMat = (Math.random() > 0.3) ? this.sparkYellowMat : this.sparkOrangeMat;
       const sparkMesh = new THREE.Mesh(this.sparkGeo, sparkMat);
       sparkMesh.position.copy(pos);
       this.scene.add(sparkMesh);
@@ -465,6 +516,7 @@ export class ParticleEngine {
         mesh: sparkMesh,
         type: 'SPARK',
         vel: vel,
+        initialScale: 1.0,
         life: 0.65 + Math.random() * 0.35,
         maxLife: 1.0
       });
@@ -478,18 +530,24 @@ export class ParticleEngine {
 
   /* --- ORGANIC IRREGULAR TRANSLUCENT SMOKE PUFF GENERATION --- */
   createSmokePuff(pos, color = 0x333333, size = 18, isDense = false, customVel = null) {
-    const baseMat = isDense ? this.heavySmokeMat : this.smokeMat;
-    const mat = baseMat ? baseMat.clone() : new THREE.SpriteMaterial({ transparent: true, opacity: 0.75 });
+    let palette = this.smokePalettes.dark;
+    if (color === 0xffffff || color === 0xd8f4ff) {
+      palette = this.smokePalettes.white;
+    } else if (color === 0xff2222 || color === 0xcc3300) {
+      palette = this.smokePalettes.crimson;
+    } else if (color === 0xffaa00 || color === 0xff7700) {
+      palette = this.smokePalettes.orange;
+    } else if (!isDense) {
+      palette = this.smokePalettes.wispyDark;
+    }
 
-    mat.color.setHex(color);
-
+    const mat = palette[palette.length - 1];
     const sprite = new THREE.Sprite(mat);
     sprite.position.copy(pos);
 
     // Irregular Anisotropic Scaling (橢圓不規則膨脹)
     const aspect = 0.82 + Math.random() * 0.36;
     sprite.scale.set(size, size * aspect, 1);
-    mat.rotation = Math.random() * Math.PI * 2;
     this.scene.add(sprite);
 
     const vel = customVel ? customVel.clone() : new THREE.Vector3(
@@ -502,10 +560,9 @@ export class ParticleEngine {
     this.particles.push({
       mesh: sprite,
       type: 'SMOKE',
+      palette: palette,
       vel: vel,
       growth: isDense ? (1.8 + Math.random() * 1.2) : (1.3 + Math.random() * 0.8),
-      rotVel: (Math.random() - 0.5) * 1.2,
-      initialOpacity: isDense ? 0.94 : 0.76,
       life: maxLife,
       maxLife: maxLife
     });
@@ -513,13 +570,9 @@ export class ParticleEngine {
 
   /* --- BULLET IMPACT SPARKS --- */
   createSparks(pos, color = 0xffee33, count = 12) {
+    const mat = (color === 0xff3300) ? this.sparkOrangeMat : this.sparkYellowMat;
     for (let i = 0; i < count; i++) {
-      const sparkMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 1.0
-      });
-      const sparkMesh = new THREE.Mesh(this.sparkGeo, sparkMat);
+      const sparkMesh = new THREE.Mesh(this.sparkGeo, mat);
       sparkMesh.position.copy(pos);
       sparkMesh.scale.setScalar(0.75);
       this.scene.add(sparkMesh);
@@ -534,14 +587,35 @@ export class ParticleEngine {
         mesh: sparkMesh,
         type: 'SPARK',
         vel: vel,
+        initialScale: 0.75,
         life: 0.25 + Math.random() * 0.25,
         maxLife: 0.5
       });
     }
   }
 
+  /* --- PARTICLE CAP ENFORCEMENT --- */
+  enforceCap() {
+    const MAX_PARTICLES = 250;
+    while (this.particles.length > MAX_PARTICLES) {
+      let removed = false;
+      for (let j = 0; j < this.particles.length; j++) {
+        const p = this.particles[j];
+        if (p.type === 'SMOKE' || p.type === 'SPARK') {
+          this.scene.remove(p.mesh);
+          this.particles.splice(j, 1);
+          removed = true;
+          break;
+        }
+      }
+      if (!removed) break;
+    }
+  }
+
   /* --- MAIN PARTICLE PHYSICS & ANIMATION LOOP --- */
   update(dtReal) {
+    this.enforceCap();
+
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dtReal;
@@ -551,18 +625,9 @@ export class ParticleEngine {
         p.mesh.scale.multiplyScalar(1.0 + p.growth * dtReal * 0.16);
         p.mesh.position.addScaledVector(p.vel, dtReal);
 
-        // Color shift: White -> Golden Yellow -> Blazing Orange -> Dark Burning Ember
-        if (progress < 0.22) {
-          p.mesh.material.color.setHex(lerpColor(0xffffff, 0xffee22, progress / 0.22));
-        } else if (progress < 0.55) {
-          p.mesh.material.color.setHex(lerpColor(0xffee22, 0xff4400, (progress - 0.22) / 0.33));
-        } else if (progress < 0.82) {
-          p.mesh.material.color.setHex(lerpColor(0xff4400, 0x441406, (progress - 0.55) / 0.27));
-        } else {
-          p.mesh.material.color.setHex(lerpColor(0x441406, 0x181818, (progress - 0.82) / 0.18));
-        }
-
-        p.mesh.material.opacity = progress > 0.65 ? Math.max(0, 1.0 - (progress - 0.65) / 0.35) : 1.0;
+        // Core Fireball color & temperature evolution using pre-allocated material stages
+        const matIdx = Math.min(this.coreMats.length - 1, Math.max(0, Math.floor(progress * this.coreMats.length)));
+        p.mesh.material = this.coreMats[matIdx];
 
       } else if (p.type === 'FIREBALL_LOBE') {
         p.mesh.scale.multiplyScalar(1.0 + p.growth * dtReal * 0.14);
@@ -573,15 +638,8 @@ export class ParticleEngine {
         p.mesh.rotation.y += p.rotVel.y * dtReal;
         p.mesh.rotation.z += p.rotVel.z * dtReal;
 
-        if (progress < 0.30) {
-          p.mesh.material.color.setHex(lerpColor(0xffee22, 0xff5500, progress / 0.30));
-        } else if (progress < 0.65) {
-          p.mesh.material.color.setHex(lerpColor(0xff5500, 0xff1100, (progress - 0.30) / 0.35));
-        } else {
-          p.mesh.material.color.setHex(lerpColor(0xff1100, 0x1c1c1c, (progress - 0.65) / 0.35));
-        }
-
-        p.mesh.material.opacity = progress > 0.70 ? Math.max(0, 1.0 - (progress - 0.70) / 0.30) : 0.98;
+        const matIdx = Math.min(this.lobeMats.length - 1, Math.max(0, Math.floor(progress * this.lobeMats.length)));
+        p.mesh.material = this.lobeMats[matIdx];
 
       } else if (p.type === 'WRECKAGE') {
         // High-Fidelity Tumbling Aircraft Wreckage
@@ -594,9 +652,9 @@ export class ParticleEngine {
         p.mesh.rotation.y += p.rotVel.y * dtReal;
         p.mesh.rotation.z += p.rotVel.z * dtReal;
 
-        // Emit continuous stream of billowing black smoke & fire sparks
+        // Emit stream of billowing black smoke & fire sparks
         p.smokeTimer += dtReal;
-        if (p.smokeTimer > 0.045) {
+        if (p.smokeTimer > 0.08) {
           p.smokeTimer = 0;
           this.createSmokePuff(
             p.mesh.position,
@@ -608,32 +666,28 @@ export class ParticleEngine {
 
       } else if (p.type === 'FLASH') {
         p.mesh.scale.multiplyScalar(1.0 + p.growth * dtReal * 0.2);
-        p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
 
       } else if (p.type === 'RING') {
         p.mesh.scale.multiplyScalar(1.0 + p.growth * dtReal * 0.12);
-        p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
 
       } else if (p.type === 'SPARK') {
         p.vel.y -= 26 * dtReal;
         p.mesh.position.addScaledVector(p.vel, dtReal);
-        p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
+        const ratio = Math.max(0.01, p.life / p.maxLife);
+        p.mesh.scale.setScalar(ratio * (p.initialScale || 1.0));
 
       } else if (p.type === 'SMOKE') {
         // Organic Irregular Translucent Billowing Smoke
         p.mesh.scale.multiplyScalar(1.0 + p.growth * dtReal);
-        if (p.mesh.material) {
-          p.mesh.material.rotation += p.rotVel * dtReal;
-        }
-
         p.vel.y += 14 * dtReal; // Thermal upward buoyancy
         p.vel.x *= 0.97;
         p.vel.z *= 0.97;
         p.mesh.position.addScaledVector(p.vel, dtReal);
 
-        // Smooth cubic opacity fadeout
+        // Quantized alpha palette lookup - smooth fade without material clones or leaks
         const norm = Math.max(0, p.life / p.maxLife);
-        p.mesh.material.opacity = Math.pow(norm, 1.25) * p.initialOpacity;
+        const stepIdx = Math.min(p.palette.length - 1, Math.max(0, Math.floor(norm * p.palette.length)));
+        p.mesh.material = p.palette[stepIdx];
       }
 
       if (p.life <= 0) {

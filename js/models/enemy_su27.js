@@ -11,6 +11,20 @@ let sharedEnemyRedMat = null;
 let sharedDarkMat = null;
 let sharedTitaniumMat = null;
 
+let sharedOuterExhaustGeo, sharedInnerExhaustGeo, sharedDiamondGeo;
+let sharedOuterFlMat, sharedInnerFlMat, sharedDiamondMat;
+
+function initSu27SharedPlumes() {
+  if (typeof THREE === 'undefined' || sharedOuterExhaustGeo) return;
+  sharedOuterExhaustGeo = new THREE.ConeGeometry(2.0, 18, 14).rotateX(Math.PI / 2);
+  sharedInnerExhaustGeo = new THREE.ConeGeometry(0.95, 11, 10).rotateX(Math.PI / 2);
+  sharedDiamondGeo = new THREE.OctahedronGeometry(0.7, 0);
+
+  sharedOuterFlMat = new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 });
+  sharedInnerFlMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98 });
+  sharedDiamondMat = new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.90 });
+}
+
 function getMaterials() {
   if (!sharedEnemySkinMat) {
     const tex = createAggressorCamoTexture();
@@ -23,40 +37,25 @@ function getMaterials() {
 }
 
 export function buildSu27Mesh() {
+  initSu27SharedPlumes();
+
   // 1. High-Quality 3D Polygonal Mesh (Path A) - Scaled 2.35x for arcade prominence
   if (modelManager && modelManager.hasModel('SU27')) {
     const eGroup = new THREE.Group();
     const model = modelManager.getModel('SU27');
     eGroup.add(model);
 
-    // Dynamic Afterburner Firelight
-    const abLight = new THREE.PointLight(0xff4400, 2.8, 60);
-    abLight.position.set(0, -0.7, -20.5);
-    eGroup.add(abLight);
-
-    // Glowing Russian Aggressor Twin Afterburner Exhaust Plumes (2.35x arcade scaled)
+    // Glowing Russian Aggressor Twin Afterburner Exhaust Plumes (2.35x arcade scaled, zero-light overhead)
     [-4.2, 4.2].forEach(ox => {
-      // Outer fiery orange-red afterburner jet flame
-      const outerFl = new THREE.Mesh(
-        new THREE.ConeGeometry(2.0, 18, 16).rotateX(Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 })
-      );
+      const outerFl = new THREE.Mesh(sharedOuterExhaustGeo, sharedOuterFlMat);
       outerFl.position.set(ox, -0.7, -22.0);
       eGroup.add(outerFl);
 
-      // Inner white-hot / cyan shock core
-      const innerFl = new THREE.Mesh(
-        new THREE.ConeGeometry(0.95, 11, 12).rotateX(Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98 })
-      );
+      const innerFl = new THREE.Mesh(sharedInnerExhaustGeo, sharedInnerFlMat);
       innerFl.position.set(ox, -0.7, -18.5);
       eGroup.add(innerFl);
 
-      // Supersonic shock diamond
-      const diamond = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.7, 0),
-        new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.90 })
-      );
+      const diamond = new THREE.Mesh(sharedDiamondGeo, sharedDiamondMat);
       diamond.position.set(ox, -0.7, -19.5);
       eGroup.add(diamond);
     });
@@ -67,11 +66,6 @@ export function buildSu27Mesh() {
   // 2. Procedural Fallback if GLTF not loaded (2.35x scaled arcade dimensions)
   const mats = getMaterials();
   const eGroup = new THREE.Group();
-
-  // Dynamic Afterburner Point Light
-  const abLight = new THREE.PointLight(0xff4400, 2.8, 60);
-  abLight.position.set(0, -0.9, -21.0);
-  eGroup.add(abLight);
 
   // Long Pointed Drooping Nose
   const noseGeo = new THREE.ConeGeometry(3.1, 21.6, 16).rotateX(-Math.PI / 2);
@@ -122,17 +116,11 @@ export function buildSu27Mesh() {
     nozzle.position.set(ox, -0.9, -15.8);
     eGroup.add(nozzle);
 
-    const outerExhaust = new THREE.Mesh(
-      new THREE.ConeGeometry(2.0, 18, 16).rotateX(Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0xff3b00, transparent: true, opacity: 0.92 })
-    );
+    const outerExhaust = new THREE.Mesh(sharedOuterExhaustGeo, sharedOuterFlMat);
     outerExhaust.position.set(ox, -0.9, -22.5);
     eGroup.add(outerExhaust);
 
-    const innerExhaust = new THREE.Mesh(
-      new THREE.ConeGeometry(0.95, 11, 12).rotateX(Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98 })
-    );
+    const innerExhaust = new THREE.Mesh(sharedInnerExhaustGeo, sharedInnerFlMat);
     innerExhaust.position.set(ox, -0.9, -19.0);
     eGroup.add(innerExhaust);
   });

@@ -439,7 +439,7 @@ export class CombatSystem {
 
       // Dense, brilliant white corkscrewing smoke trail
       m.smokeTimer += dt;
-      if (m.smokeTimer >= 0.018) {
+      if (m.smokeTimer >= 0.032) {
         m.smokeTimer = 0;
         m.smokeStep = (m.smokeStep || 0) + 1;
         const angle = m.smokeStep * 0.85;
@@ -536,7 +536,7 @@ export class CombatSystem {
 
       // Smoke trail: Dense crimson / decoy-amber trail
       em.smokeTimer += dt;
-      if (em.smokeTimer >= 0.022) {
+      if (em.smokeTimer >= 0.036) {
         em.smokeTimer = 0;
         em.smokeStep = (em.smokeStep || 0) + 1;
         const puffColor = em.decoyed ? 0xffaa00 : 0xff2222;

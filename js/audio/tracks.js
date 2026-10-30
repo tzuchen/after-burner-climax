@@ -252,9 +252,19 @@ export class MusicTracker {
     let nextNoteTime = sound.ctx.currentTime + 0.05;
 
     const schedule = () => {
+      // Clock drift resynchronization:
+      // If the browser tab was backgrounded or a heavy frame hitch occurred,
+      // resync nextNoteTime so we don't burst-spawn past notes.
+      if (nextNoteTime < sound.ctx.currentTime) {
+        const missedSteps = Math.floor((sound.ctx.currentTime - nextNoteTime) / stepTime);
+        this.step += missedSteps;
+        nextNoteTime = sound.ctx.currentTime + 0.05;
+      }
+
       const data = this.getTrackData(this.currentTrackId);
 
-      while (nextNoteTime < sound.ctx.currentTime + 0.12) {
+      // Generous 0.45s lookahead buffer prevents audio starvation even during 300ms hitches
+      while (nextNoteTime < sound.ctx.currentTime + 0.45) {
         const step = this.step % 128;
         const barStep = step % 16;
 
