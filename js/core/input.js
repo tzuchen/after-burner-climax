@@ -110,8 +110,12 @@ export class InputManager {
     });
 
     window.addEventListener('mousedown', (e) => {
-      // In hangar or route branching, UI buttons handle their own interactions
-      if (state.inHangar || state.isSelectingRoute || !state.started) {
+      // In hangar or title, UI buttons handle their own interactions
+      if (state.inHangar || !state.started || state.inTitle) {
+        return;
+      }
+      // If clicking inside the route branching HUD banner, let button click handle it
+      if (e.target && (e.target.closest('#route-modal') || e.target.closest('#touch-controls'))) {
         return;
       }
       if (e.button === 0) {

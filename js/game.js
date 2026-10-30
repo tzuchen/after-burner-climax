@@ -380,7 +380,7 @@ class GameApp {
 
   startRefuelingIntermission() {
     this.isRefueling = true;
-    this.refuelTimer = 5.0;
+    this.refuelTimer = 2.8; // Snappy 2.8s aerial refueling (was 5.0s pause)
     this.enemyAI.clear();
     this.combat.clear();
     this.tanker.startSequence(this.player.group);
@@ -410,10 +410,9 @@ class GameApp {
     const dtReal = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
 
-    // 0. Micro Hit-Stop Frame Freeze (Arcade Impact Crunch)
+    // 0. Micro Hit-Stop Decay (No screen freeze / pauses!)
     if (this.hitStopTimer > 0) {
       this.hitStopTimer -= dtReal;
-      return;
     }
 
     // 0. Title Screen Mode: gentle camera bobbing & turntable rotation behind overlay
@@ -432,17 +431,23 @@ class GameApp {
       return;
     }
 
-    // 0.1 Tactical Route Branching Decision Pause
+    // 0.1 In-Flight Tactical Route Branching Decision (Continues flight seamlessly without pausing!)
     if (state.isSelectingRoute) {
       this.routeCountdown -= dtReal;
       const timerEl = document.getElementById('route-timer');
       if (timerEl) {
-        timerEl.innerText = `AUTO-SELECTING ROUTE A IN ${Math.max(1, Math.ceil(this.routeCountdown))}s...`;
+        timerEl.innerText = `STEER [◀ 1 / 2 ▶] (AUTO IN ${Math.max(1, Math.ceil(this.routeCountdown))}s)`;
       }
-      if (this.routeCountdown <= 0) {
-        this.selectRoute(0);
+
+      // Natural flight stick / mouse banking route selection
+      const { flightX } = this.input.poll();
+      if (flightX < -0.75 && this.routeCountdown < 4.2) {
+        this.selectRoute(0); // Bank left -> Route A
+      } else if (flightX > 0.75 && this.routeCountdown < 4.2) {
+        this.selectRoute(1); // Bank right -> Route B
+      } else if (this.routeCountdown <= 0) {
+        this.selectRoute(0); // Timeout auto-select Route A
       }
-      return;
     }
 
     if (!state.started) return;
@@ -618,13 +623,14 @@ class GameApp {
 
       // 9. Stage Progression Check
       const stage = state.getCurrentStage();
-      if (!stage.bossStage && state.stageKills >= stage.targetKills) {
+      if (!stage.bossStage && state.stageKills >= stage.targetKills && !state.isSelectingRoute) {
         if (stage.routes && stage.routes.length > 1) {
           this.openRouteBranchingModal(stage);
         } else if (stage.routes && stage.routes.length === 1) {
           state.nextStage(0);
           this.startRefuelingIntermission();
         } else {
+          state.stageKills = 0;
           this.startRefuelingIntermission();
         }
       }

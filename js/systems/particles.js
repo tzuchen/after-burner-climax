@@ -285,11 +285,6 @@ export class ParticleEngine {
     const wreckageCount = isBoss ? 14 : 7;
     const sparkCount = isBoss ? 65 : 38;
 
-    // Trigger Arcade Micro Hit-Stop Frame Freeze on Impact
-    if (typeof window !== 'undefined' && window.gameApp) {
-      window.gameApp.triggerHitStop(isBoss ? 0.055 : 0.035);
-    }
-
     // 0. Blinding White-Hot Detonation Flash Sphere
     const flashMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
